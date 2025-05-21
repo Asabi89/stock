@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+    {% load inventory_tags %}
+<head>
+    <meta charset="utf-8">
+    <title>Bon d'achat #{{ purchase.id }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .company-name {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .company-details {
+            font-size: 14px;
+            color: #666;
+        }
+        .document-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin: 20px 0;
+            text-align: center;
+            color: #0ea5e9;
+        }
+        .info-section {
+            margin-bottom: 20px;
+        }
+        .info-row {
+            display: flex;
+            margin-bottom: 10px;
+        }
+        .info-label {
+            font-weight: bold;
+            width: 150px;
+        }
+        .info-value {
+            flex: 1;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th {
+            background-color: #f3f4f6;
+            padding: 10px;
+            text-align: left;
+            font-weight: bold;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        td {
+            padding: 10px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .totals {
+            margin-top: 20px;
+            text-align: right;
+        }
+        .total-row {
+            margin-bottom: 5px;
+        }
+        .total-label {
+            font-weight: bold;
+            display: inline-block;
+            width: 150px;
+            text-align: right;
+            margin-right: 10px;
+        }
+        .total-value {
+            font-weight: bold;
+            display: inline-block;
+            width: 100px;
+            text-align: right;
+        }
+        .footer {
+            margin-top: 50px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="company-name">{{ company_name }}</div>
+        <div class="company-details">
+            {{ company_address }}<br>
+            Tél: {{ company_phone }} | Email: {{ company_email }}
+        </div>
+    </div>
+    
+    <div class="document-title">BON D'ACHAT #{{ purchase.id }}</div>
+    
+    <div class="info-section">
+        <div class="info-row">
+            <div class="info-label">Fournisseur:</div>
+            <div class="info-value">{{ purchase.supplier.name }}</div>
+        </div>
+        <div class="info-row">
+            <div class="info-label">Date d'achat:</div>
+            <div class="info-value">{{ purchase.purchase_date|date:"d/m/Y H:i" }}</div>
+        </div>
+        <div class="info-row">
+            <div class="info-label">Référence:</div>
+            <div class="info-value">{{ purchase.reference|default:"--" }}</div>
+        </div>
+    </div>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Produit</th>
+                <th>Quantité</th>
+                <th>Prix unitaire</th>
+                <th>Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td>{{ item.product.name }}</td>
+                <td>{{ item.quantity }} {{ item.product.unit }}</td>
+                <td>{{ item.unit_price }} €</td>
+                <td>{{ item.quantity|multiply:item.unit_price }} €</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <div class="totals">
+        <div class="total-row">
+            <span class="total-label">Total HT:</span>
+            <span class="total-value">{{ purchase.total_amount }} €</span>
+        </div>
+        <div class="total-row">
+            <span class="total-label">TVA:</span>
+            <span class="total-value">0.00 €</span>
+        </div>
+        <div class="total-row">
+            <span class="total-label">Total TTC:</span>
+            <span class="total-value">{{ purchase.total_amount }} €</span>
+        </div>
+        <div class="total-row">
+            <span class="total-label">Montant payé:</span>
+            <span class="total-value">{{ purchase.paid_amount }} €</span>
+        </div>
+        <div class="total-row">
+            <span class="total-label">Reste à payer:</span>
+            <span class="total-value">{{ purchase.total_amount|subtract:purchase.paid_amount }} €</span>
+        </div>
+    </div>
+    
+    <div class="footer">
+        Document généré le {{ now|date:"d/m/Y H:i" }}
+    </div>
+</body>
+</html>

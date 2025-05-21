@@ -1,0 +1,824 @@
+{% extends "base.html" %}
+{% load inventory_tags %}
+
+{% block title %}Rapport de Stock - Gestion de Stock{% endblock %}
+
+{% block header_title %}Rapport d'État du Stock{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in-up">
+    <!-- Header with actions -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+        <div>
+            <h2 class="text-xl md:text-2xl font-bold text-secondary-800 flex items-center">
+                <i class="fas fa-chart-bar text-primary-600 mr-3"></i>
+                <span>État du Stock</span>
+            </h2>
+            <p class="text-sm text-secondary-500 mt-1">Analyse détaillée de l'inventaire et des niveaux de stock</p>
+        </div>
+        <div class="flex gap-2">
+            <a href="{% url 'export_stock_csv' %}" 
+               class="px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 flex items-center gap-2 transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-lg">
+                <i class="fas fa-file-export"></i>
+                <span>Exporter CSV</span>
+            </a>
+            <button id="printReport" 
+                    class="px-4 py-2 bg-secondary-600 text-white rounded-lg font-medium hover:bg-secondary-700 focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:ring-offset-2 flex items-center gap-2 transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-lg">
+                <i class="fas fa-print"></i>
+                <span>Imprimer</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Dashboard Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <!-- Total Products Card -->
+        <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-primary-500 flex items-center">
+            <div class="rounded-full bg-primary-100 p-3 mr-4">
+                <i class="fas fa-box text-primary-600 text-xl"></i>
+            </div>
+            <div>
+                <h3 class="text-secondary-500 text-sm font-medium">Total des Produits</h3>
+                <p class="text-3xl font-bold text-secondary-800">{{ products.count }}</p>
+            </div>
+        </div>
+        
+        <!-- Low Stock Products Card -->
+        <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-red-500 flex items-center">
+            <div class="rounded-full bg-red-100 p-3 mr-4">
+                <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+            </div>
+            <div>
+                <h3 class="text-secondary-500 text-sm font-medium">Produits en Stock Bas</h3>
+                <p class="text-3xl font-bold text-secondary-800">{{ low_stock_products.count }}</p>
+            </div>
+        </div>
+        
+        <!-- Stock Value Card -->
+        <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-green-500 flex items-center">
+            <div class="rounded-full bg-green-100 p-3 mr-4">
+                <i class="fas fa-money-bill-wave text-green-600 text-xl"></i>
+            </div>
+            <div>
+                <h3 class="text-secondary-500 text-sm font-medium">Valeur Totale du Stock</h3>
+                <p class="text-3xl font-bold text-secondary-800" id="totalStockValue">Calcul...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <!-- Stock Distribution Chart -->
+        <div class="bg-white rounded-lg shadow-md overflow-hidden border border-secondary-200">
+            <div class="bg-secondary-50 px-6 py-4 border-b border-secondary-200 flex justify-between items-center">
+                <h3 class="font-medium text-secondary-800">Distribution du Stock par Catégorie</h3>
+                <div class="flex gap-2">
+                    <button class="text-secondary-500 hover:text-secondary-700 focus:outline-none" id="stockDistributionInfo">
+                        <i class="fas fa-info-circle"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-4 flex justify-center">
+                <div class="w-full h-80">
+                    <canvas id="stockDistributionChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Stock Status Chart -->
+        <div class="bg-white rounded-lg shadow-md overflow-hidden border border-secondary-200">
+            <div class="bg-secondary-50 px-6 py-4 border-b border-secondary-200 flex justify-between items-center">
+                <h3 class="font-medium text-secondary-800">État du Stock</h3>
+                <div class="flex gap-2">
+                    <button class="text-secondary-500 hover:text-secondary-700 focus:outline-none" id="stockStatusInfo">
+                        <i class="fas fa-info-circle"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-4 flex justify-center">
+                <div class="w-full h-80">
+                    <canvas id="stockStatusChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Products Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <!-- Top Low Stock Products -->
+        <div class="bg-white rounded-lg shadow-md overflow-hidden border border-secondary-200 lg:col-span-2">
+            <div class="bg-secondary-50 px-6 py-4 border-b border-secondary-200">
+                <h3 class="font-medium text-secondary-800">Produits en Stock Bas</h3>
+            </div>
+            <div class="p-4">
+                {% if low_stock_products %}
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-secondary-200">
+                            <thead class="bg-secondary-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Produit</th>
+                                    <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-secondary-500 uppercase tracking-wider">Stock Actuel</th>
+                                    <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-secondary-500 uppercase tracking-wider">Seuil Minimum</th>
+                                    <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-secondary-500 uppercase tracking-wider">Statut</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-secondary-200">
+                                {% for product in low_stock_products|slice:":5" %}
+                                    <tr class="hover:bg-secondary-50">
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex items-center">
+                                                <div class="flex-shrink-0 h-10 w-10 bg-secondary-100 rounded-full flex items-center justify-center text-secondary-500">
+                                                    <i class="fas fa-box"></i>
+                                                </div>
+                                                <div class="ml-4">
+                                                    <div class="text-sm font-medium text-secondary-900">{{ product.name }}</div>
+                                                    <div class="text-xs text-secondary-500">{{ product.category.name|default:"Non catégorisé" }}</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-center">
+                                            <span class="text-sm text-secondary-900">{{ product.quantity }} {{ product.unit }}</span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-center">
+                                            <span class="text-sm text-secondary-900">{{ product.minimum_threshold }} {{ product.unit }}</span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-center">
+                                            {% if product.quantity == 0 %}
+                                                <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Rupture de stock</span>
+                                            {% else %}
+                                                <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Stock bas</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% if low_stock_products.count > 5 %}
+                        <div class="mt-4 text-center">
+                            <button id="showAllLowStock" class="text-primary-600 hover:text-primary-800 text-sm font-medium">
+                                Voir tous les {{ low_stock_products.count }} produits en stock bas
+                            </button>
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <div class="text-center py-8">
+                        <div class="text-secondary-400 mb-2">
+                            <i class="fas fa-check-circle text-3xl"></i>
+                        </div>
+                        <p class="text-secondary-600">Tous les produits ont un niveau de stock suffisant</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Stock Value by Category -->
+        <div class="bg-white rounded-lg shadow-md overflow-hidden border border-secondary-200">
+            <div class="bg-secondary-50 px-6 py-4 border-b border-secondary-200">
+                <h3 class="font-medium text-secondary-800">Valeur du Stock par Catégorie</h3>
+            </div>
+            <div class="p-4">
+                <div class="h-80">
+                    <canvas id="stockValueByCategory"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- All Products Table -->
+    <div class="bg-white rounded-lg shadow-md overflow-hidden border border-secondary-200 mb-6">
+        <div class="bg-secondary-50 px-6 py-4 border-b border-secondary-200 flex justify-between items-center">
+            <h3 class="font-medium text-secondary-800">Tous les Produits</h3>
+            <div class="relative">
+                <input type="text" id="productSearch" placeholder="Rechercher un produit..." class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 block shadow-sm sm:text-sm border-secondary-300">
+                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                    <i class="fas fa-search text-secondary-400"></i>
+                </div>
+            </div>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-secondary-200" id="productsTable">
+                <thead class="bg-secondary-50">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Produit</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Catégorie</th>
+                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-secondary-500 uppercase tracking-wider">Prix d'achat</th>
+                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-secondary-500 uppercase tracking-wider">Prix de vente</th>
+                        <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-secondary-500 uppercase tracking-wider">Quantité</th>
+                        <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-secondary-500 uppercase tracking-wider">Valeur du Stock</th>
+                        <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-secondary-500 uppercase tracking-wider">Statut</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-secondary-200">
+                    {% for product in products %}
+                        <tr class="hover:bg-secondary-50">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0 h-10 w-10 bg-secondary-100 rounded-full flex items-center justify-center text-secondary-500">
+                                        <i class="fas fa-box"></i>
+                                    </div>
+                                    <div class="ml-4">
+                                        <div class="text-sm font-medium text-secondary-900">{{ product.name }}</div>
+                                        <div class="text-xs text-secondary-500">ID: {{ product.id }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                {% if product.category %}
+                                    <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-secondary-100 text-secondary-800">
+                                        {{ product.category.name }}
+                                    </span>
+                                {% else %}
+                                    <span class="text-secondary-400">-</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right">
+                                    <div class="text-sm text-secondary-900">{{ product.purchase_price }} FCFA</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right">
+                                    <div class="text-sm text-secondary-900">{{ product.selling_price }} FCFA</div>
+                                    <div class="text-xs text-green-600">
+                                        {% with margin=product.selling_price|floatformat:2|slugify|add:"-"|add:product.purchase_price|floatformat:2|slugify %}
+                                            {% if margin|first != "-" %}+{% endif %}{{ margin }} FCFA
+                                        {% endwith %}
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-center">
+                                    <div class="text-sm text-secondary-900">{{ product.quantity }} {{ product.unit }}</div>
+                                    {% if product.quantity <= product.minimum_threshold %}
+                                        <div class="text-xs text-red-600">Seuil: {{ product.minimum_threshold }}</div>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-center">
+                                    <div class="text-sm font-medium text-secondary-900">
+                                        {{ product.quantity|multiply:product.purchase_price }} FCFA
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-center">
+                                    {% if product.quantity <= 0 %}
+                                        <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                            Rupture de stock
+                                        </span>
+                                    {% elif product.quantity <= product.minimum_threshold %}
+                                        <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                            Stock bas
+                                        </span>
+                                    {% else %}
+                                        <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                            En stock
+                                        </span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Low Stock Products Modal -->
+    <div id="lowStockModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 transform transition-all duration-300 scale-95 opacity-0" id="lowStockModalContent">
+            <div class="bg-primary-600 text-white px-6 py-4 rounded-t-lg flex justify-between items-center">
+                <h3 class="text-lg font-semibold">Tous les produits en stock bas</h3>
+                <button id="closeLowStockModal" class="text-white hover:text-primary-200 transition-colors duration-150">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="p-6">
+                <div class="overflow-x-auto max-h-96">
+                    <table class="min-w-full divide-y divide-secondary-200">
+                        <thead class="bg-secondary-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider sticky top-0 bg-secondary-50">Produit</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider sticky top-0 bg-secondary-50">Catégorie</th>
+                                <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-secondary-500 uppercase tracking-wider sticky top-0 bg-secondary-50">Stock Actuel</th>
+                                <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-secondary-500 uppercase tracking-wider sticky top-0 bg-secondary-50">Seuil Minimum</th>
+                                <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-secondary-500 uppercase tracking-wider sticky top-0 bg-secondary-50">Statut</th>
+                                <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-secondary-500 uppercase tracking-wider sticky top-0 bg-secondary-50">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-secondary-200">
+                            {% for product in low_stock_products %}
+                                <tr class="hover:bg-secondary-50">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center">
+                                            <div class="flex-shrink-0 h-10 w-10 bg-secondary-100 rounded-full flex items-center justify-center text-secondary-500">
+                                                <i class="fas fa-box"></i>
+                                            </div>
+                                            <div class="ml-4">
+                                                <div class="text-sm font-medium text-secondary-900">{{ product.name }}</div>
+                                                <div class="text-xs text-secondary-500">ID: {{ product.id }}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        {% if product.category %}
+                                            <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-secondary-100 text-secondary-800">
+                                                {{ product.category.name }}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-secondary-400">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                                        <span class="text-sm text-secondary-900">{{ product.quantity }} {{ product.unit }}</span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                                        <span class="text-sm text-secondary-900">{{ product.minimum_threshold }} {{ product.unit }}</span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                                        {% if product.quantity == 0 %}
+                                            <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Rupture de stock</span>
+                                        {% else %}
+                                            <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Stock bas</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                                        <a href="{% url 'product_edit' product.id %}" class="text-primary-600 hover:text-primary-900 mr-3">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="{% url 'purchase_create' %}?product={{ product.id }}" class="text-green-600 hover:text-green-900">
+                                            <i class="fas fa-plus-circle"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="mt-6 flex justify-end">
+                    <button id="closeLowStockBtn" class="px-4 py-2 bg-secondary-200 text-secondary-800 rounded-lg font-medium hover:bg-secondary-300 focus:outline-none focus:ring-2 focus:ring-secondary-400 focus:ring-offset-2 transition-all duration-200">
+                        Fermer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endblock %}
+    
+    {% block extra_css %}
+    <style>
+        /* Enhanced animations */
+        @keyframes fade-in-up {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .animate-fade-in-up {
+            animation: fade-in-up 0.4s ease-out forwards;
+        }
+        
+        /* Modal animation */
+        @keyframes modal-in {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        .modal-animate-in {
+            animation: modal-in 0.3s ease-out forwards;
+        }
+        
+        /* Print styles */
+        @media print {
+            body {
+                background-color: white;
+                font-size: 12pt;
+            }
+            
+            .no-print {
+                display: none !important;
+            }
+            
+            .page-break {
+                page-break-before: always;
+            }
+            
+            .print-full-width {
+                width: 100% !important;
+            }
+        }
+    </style>
+    {% endblock %}
+    
+    {% block extra_js %}
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Calculate total stock value
+        let totalStockValue = 0;
+        {% for product in products %}
+            totalStockValue += {{ product.quantity }} * {{ product.purchase_price }};
+        {% endfor %}
+        
+        document.getElementById('totalStockValue').textContent = totalStockValue.toLocaleString() + ' FCFA';
+        
+        // Stock Distribution Chart
+        const stockDistributionCtx = document.getElementById('stockDistributionChart').getContext('2d');
+        
+        // Prepare data for stock distribution chart
+        const categories = {};
+        {% for product in products %}
+            const category = "{{ product.category.name|default:'Non catégorisé' }}";
+            if (!categories[category]) {
+                categories[category] = 0;
+            }
+            categories[category] += {{ product.quantity }};
+        {% endfor %}
+        
+        const categoryLabels = Object.keys(categories);
+        const categoryData = Object.values(categories);
+        const categoryColors = generateColors(categoryLabels.length);
+        
+        const stockDistributionChart = new Chart(stockDistributionCtx, {
+            type: 'pie',
+            data: {
+                labels: categoryLabels,
+                datasets: [{
+                    data: categoryData,
+                    backgroundColor: categoryColors,
+                    borderColor: 'white',
+                    borderWidth: 2,
+                    hoverOffset: 10
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            boxWidth: 15,
+                            padding: 15,
+                            font: {
+                                size: 12
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.raw || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = Math.round((value / total) * 100);
+                                return `${label}: ${value} unités (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Stock Status Chart
+        const stockStatusCtx = document.getElementById('stockStatusChart').getContext('2d');
+        
+        // Count products by status
+        const normalStock = {{ products.count }} - {{ low_stock_products.count }};
+        const lowStock = {{ low_stock_products.count }};
+        
+        // Count products with zero stock
+        let zeroStock = 0;
+        {% for product in low_stock_products %}
+            {% if product.quantity == 0 %}
+                zeroStock++;
+            {% endif %}
+        {% endfor %}
+        
+        const stockStatusChart = new Chart(stockStatusCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Stock Normal', 'Stock Bas', 'Rupture de Stock'],
+                datasets: [{
+                    data: [normalStock, lowStock - zeroStock, zeroStock],
+                    backgroundColor: ['#10B981', '#FBBF24', '#EF4444'],
+                    borderColor: 'white',
+                    borderWidth: 2,
+                    hoverOffset: 10
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '60%',
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            boxWidth: 15,
+                            padding: 15,
+                            font: {
+                                size: 12
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.raw || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = Math.round((value / total) * 100);
+                                return `${label}: ${value} produits (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Stock Value by Category Chart
+        const stockValueByCategoryCtx = document.getElementById('stockValueByCategory').getContext('2d');
+        
+        // Prepare data for stock value by category chart
+        const categoryValues = {};
+        {% for product in products %}
+            const category = "{{ product.category.name|default:'Non catégorisé' }}";
+            if (!categoryValues[category]) {
+                categoryValues[category] = 0;
+            }
+            categoryValues[category] += {{ product.quantity }} * {{ product.purchase_price }};
+        {% endfor %}
+        
+        const categoryValueLabels = Object.keys(categoryValues);
+        const categoryValueData = Object.values(categoryValues);
+        const categoryValueColors = generateColors(categoryValueLabels.length);
+        
+        const stockValueByCategoryChart = new Chart(stockValueByCategoryCtx, {
+            type: 'doughnut',
+            data: {
+                labels: categoryValueLabels,
+                datasets: [{
+                    data: categoryValueData,
+                    backgroundColor: categoryValueColors,
+                    borderColor: 'white',
+                    borderWidth: 2,
+                    hoverOffset: 10
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            boxWidth: 15,
+                            padding: 15,
+                            font: {
+                                size: 12
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.raw || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = Math.round((value / total) * 100);
+                                return `${label}: ${value.toLocaleString()} FCFA (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Helper function to generate colors
+        function generateColors(count) {
+            const colors = [
+                '#0EA5E9', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', 
+                '#EC4899', '#14B8A6', '#F97316', '#6366F1', '#84CC16',
+                '#64748B', '#9333EA', '#06B6D4', '#D946EF', '#22C55E'
+            ];
+            
+            // If we need more colors than in our predefined array, generate them
+            if (count > colors.length) {
+                for (let i = colors.length; i < count; i++) {
+                    const r = Math.floor(Math.random() * 255);
+                    const g = Math.floor(Math.random() * 255);
+                    const b = Math.floor(Math.random() * 255);
+                    colors.push(`rgb(${r}, ${g}, ${b})`);
+                }
+            }
+            
+            return colors.slice(0, count);
+        }
+        
+        // Product search functionality
+        const searchInput = document.getElementById('productSearch');
+        const productsTable = document.getElementById('productsTable');
+        
+        if (searchInput && productsTable) {
+            searchInput.addEventListener('keyup', function() {
+                const searchTerm = this.value.toLowerCase();
+                const rows = productsTable.querySelectorAll('tbody tr');
+                let hasResults = false;
+                
+                rows.forEach(row => {
+                    const name = row.querySelector('td:first-child').textContent.toLowerCase();
+                    const category = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
+                    
+                    if (name.includes(searchTerm) || category.includes(searchTerm)) {
+                        row.style.display = '';
+                        hasResults = true;
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+                
+                // Show empty state if no results
+                const emptyState = document.getElementById('emptySearchState');
+                if (!hasResults) {
+                    if (!emptyState) {
+                        const tbody = productsTable.querySelector('tbody');
+                        const emptyRow = document.createElement('tr');
+                        emptyRow.id = 'emptySearchState';
+                        emptyRow.innerHTML = `
+                            <td colspan="7" class="px-6 py-12 text-center">
+                                <div class="flex flex-col items-center">
+                                    <div class="text-secondary-400 mb-2">
+                                        <i class="fas fa-search text-2xl"></i>
+                                    </div>
+                                    <p class="text-secondary-500">Aucun résultat pour "<span class="font-medium">${searchTerm}</span>"</p>
+                                    <button id="clearSearch" class="mt-4 text-primary-600 hover:text-primary-800 font-medium flex items-center gap-1">
+                                        <i class="fas fa-times-circle"></i> Effacer la recherche
+                                    </button>
+                                </div>
+                            </td>
+                        `;
+                        tbody.appendChild(emptyRow);
+                        
+                        // Add clear search functionality
+                        document.getElementById('clearSearch').addEventListener('click', function() {
+                            searchInput.value = '';
+                            searchInput.dispatchEvent(new Event('keyup'));
+                            searchInput.focus();
+                        });
+                    }
+                } else if (emptyState) {
+                    emptyState.remove();
+                }
+            });
+        }
+        
+        // Low Stock Modal
+        const showAllLowStock = document.getElementById('showAllLowStock');
+        const lowStockModal = document.getElementById('lowStockModal');
+        const lowStockModalContent = document.getElementById('lowStockModalContent');
+        const closeLowStockModal = document.getElementById('closeLowStockModal');
+        const closeLowStockBtn = document.getElementById('closeLowStockBtn');
+        
+        function openLowStockModal() {
+            lowStockModal.classList.remove('hidden');
+            setTimeout(() => {
+                lowStockModalContent.classList.remove('scale-95', 'opacity-0');
+                lowStockModalContent.classList.add('modal-animate-in');
+            }, 10);
+        }
+        
+        function closeLowStockModalFunction() {
+            lowStockModalContent.classList.add('scale-95', 'opacity-0');
+            lowStockModalContent.classList.remove('modal-animate-in');
+            setTimeout(() => {
+                lowStockModal.classList.add('hidden');
+            }, 300);
+        }
+        
+        if (showAllLowStock) {
+            showAllLowStock.addEventListener('click', openLowStockModal);
+        }
+        
+        if (closeLowStockModal) {
+            closeLowStockModal.addEventListener('click', closeLowStockModalFunction);
+        }
+        
+        if (closeLowStockBtn) {
+            closeLowStockBtn.addEventListener('click', closeLowStockModalFunction);
+        }
+        
+        // Close modal when clicking outside
+        if (lowStockModal) {
+            lowStockModal.addEventListener('click', function(e) {
+                if (e.target === lowStockModal) {
+                    closeLowStockModalFunction();
+                }
+            });
+        }
+        
+        // Print functionality
+        const printReportBtn = document.getElementById('printReport');
+        if (printReportBtn) {
+            printReportBtn.addEventListener('click', function() {
+                window.print();
+            });
+        }
+        
+        // Info tooltips
+        const stockDistributionInfo = document.getElementById('stockDistributionInfo');
+        const stockStatusInfo = document.getElementById('stockStatusInfo');
+        
+        if (stockDistributionInfo) {
+            stockDistributionInfo.addEventListener('click', function() {
+                showNotification('Ce graphique montre la répartition des produits par catégorie en fonction de la quantité en stock.', 'info');
+            });
+        }
+        
+        if (stockStatusInfo) {
+            stockStatusInfo.addEventListener('click', function() {
+                showNotification('Ce graphique montre la proportion de produits avec un stock normal, un stock bas ou en rupture de stock.', 'info');
+            });
+        }
+        
+        // Notification helper
+        function showNotification(message, type = 'info') {
+            // Check if notification container exists, create if not
+            let notificationContainer = document.getElementById('notificationContainer');
+            if (!notificationContainer) {
+                notificationContainer = document.createElement('div');
+                notificationContainer.id = 'notificationContainer';
+                notificationContainer.className = 'fixed bottom-4 right-4 z-50 flex flex-col gap-2 no-print';
+                document.body.appendChild(notificationContainer);
+            }
+            
+            // Create notification with appropriate styling based on type
+            const notification = document.createElement('div');
+            let bgColor, textColor, icon;
+            
+            switch(type) {
+                case 'success':
+                    bgColor = 'bg-green-100 border-l-4 border-green-500';
+                    textColor = 'text-green-800';
+                    icon = 'fa-check-circle';
+                    break;
+                case 'error':
+                    bgColor = 'bg-red-100 border-l-4 border-red-500';
+                    textColor = 'text-red-800';
+                    icon = 'fa-exclamation-circle';
+                    break;
+                case 'warning':
+                    bgColor = 'bg-yellow-100 border-l-4 border-yellow-500';
+                    textColor = 'text-yellow-800';
+                    icon = 'fa-exclamation-triangle';
+                    break;
+                default: // info
+                    bgColor = 'bg-blue-100 border-l-4 border-blue-500';
+                    textColor = 'text-blue-800';
+                    icon = 'fa-info-circle';
+            }
+            
+            notification.className = `${bgColor} ${textColor} px-4 py-3 rounded-lg shadow-lg mb-2 transform transition-all duration-300 translate-y-2 opacity-0 flex items-center max-w-md`;
+            notification.innerHTML = `
+                <i class="fas ${icon} mr-2 text-lg"></i>
+                <div class="flex-1">${message}</div>
+                <button class="ml-2 text-secondary-400 hover:text-secondary-600 focus:outline-none">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            
+            notificationContainer.appendChild(notification);
+            
+            // Animate in
+            setTimeout(() => {
+                notification.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+            
+            // Add close button functionality
+            const closeBtn = notification.querySelector('button');
+            closeBtn.addEventListener('click', () => {
+                notification.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => {
+                    notification.remove();
+                }, 300);
+            });
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.classList.add('translate-y-2', 'opacity-0');
+                    setTimeout(() => {
+                        if (notification.parentNode) {
+                            notification.remove();
+                        }
+                    }, 300);
+                }
+            }, 5000);
+        }
+    });
+    </script>
+    {% endblock %}
+    

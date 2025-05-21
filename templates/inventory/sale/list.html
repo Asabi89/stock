@@ -1,0 +1,877 @@
+{% extends "base.html" %}
+
+{% block title %}Ventes - Gestion de Stock{% endblock %}
+
+{% block header_title %}Gestion des Ventes{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in-up">
+    <!-- Header with actions -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+        <div>
+            <h2 class="text-xl md:text-2xl font-bold text-secondary-800 flex items-center">
+                <i class="fas fa-cash-register text-primary-600 mr-3"></i>
+                <span>Liste des ventes</span>
+            </h2>
+            <p class="text-sm text-secondary-500 mt-1">Gérez vos ventes et factures</p>
+        </div>
+        <a href="{% url 'sale_create' %}" 
+           class="px-4 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 flex items-center gap-2 self-start transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-lg">
+            <i class="fas fa-plus-circle"></i>
+            <span>Nouvelle vente</span>
+        </a>
+    </div>
+
+    <!-- Search and filters -->
+    <div class="bg-white rounded-lg shadow-md p-4 mb-6 border-l-4 border-primary-500">
+        <div class="flex flex-col sm:flex-row gap-4">
+            <div class="relative flex-grow">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <i class="fas fa-search text-secondary-400"></i>
+                </div>
+                <input type="text" 
+                       id="saleSearch" 
+                       placeholder="Rechercher une vente..." 
+                       class="pl-10 w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 block shadow-sm sm:text-sm border-secondary-300">
+            </div>
+            <div class="flex gap-2">
+                <div class="relative">
+                    <button id="filterButton" 
+                            class="px-4 py-2 bg-secondary-200 text-secondary-800 rounded-lg font-medium hover:bg-secondary-300 focus:outline-none focus:ring-2 focus:ring-secondary-400 focus:ring-offset-2 flex items-center gap-2 transition-all duration-200">
+                        <i class="fas fa-filter"></i>
+                        <span class="hidden sm:inline">Filtrer</span>
+                    </button>
+                    <div id="filterDropdown" class="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-secondary-200 z-10 hidden">
+                        <div class="p-4">
+                            <h4 class="font-medium text-secondary-800 mb-2">Filtrer par client</h4>
+                            <select id="clientFilter" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 block shadow-sm sm:text-sm border-secondary-300">
+                                <option value="">Tous les clients</option>
+                                <!-- Les clients seront ajoutés dynamiquement -->
+                            </select>
+                            
+                            <h4 class="font-medium text-secondary-800 mt-4 mb-2">Filtrer par statut</h4>
+                            <div class="space-y-2">
+                                <label class="flex items-center">
+                                    <input type="checkbox" id="paidFilter" class="rounded text-primary-600 focus:ring-primary-500 h-4 w-4">
+                                    <span class="ml-2 text-secondary-700">Payé</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" id="unpaidFilter" class="rounded text-primary-600 focus:ring-primary-500 h-4 w-4">
+                                    <span class="ml-2 text-secondary-700">Non payé</span>
+                                </label>
+                            </div>
+                            
+                            <h4 class="font-medium text-secondary-800 mt-4 mb-2">Période</h4>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="text-xs text-secondary-700">Du</label>
+                                    <input type="date" id="startDate" class="w-full px-2 py-1 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 block shadow-sm sm:text-sm border-secondary-300">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-secondary-700">Au</label>
+                                    <input type="date" id="endDate" class="w-full px-2 py-1 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 block shadow-sm sm:text-sm border-secondary-300">
+                                </div>
+                            </div>
+                            
+                            <div class="mt-4 flex justify-end">
+                                <button id="applyFilters" class="px-3 py-1 bg-primary-600 text-white rounded-lg text-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2">
+                                    Appliquer
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <button id="sortButton" 
+                        class="px-4 py-2 bg-secondary-200 text-secondary-800 rounded-lg font-medium hover:bg-secondary-300 focus:outline-none focus:ring-2 focus:ring-secondary-400 focus:ring-offset-2 flex items-center gap-2 transition-all duration-200">
+                    <i class="fas fa-sort"></i>
+                    <span class="hidden sm:inline">Trier</span>
+                </button>
+                <button id="exportButton" 
+                        class="bg-green-600 text-white hover:bg-green-700 px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center gap-2">
+                    <i class="fas fa-file-export"></i>
+                    <span class="hidden sm:inline">Exporter</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sales list -->
+    <div class="bg-white rounded-lg shadow-lg overflow-hidden border border-secondary-200">
+        {% if sales %}
+            <div class="overflow-x-auto responsive-table">
+                <table class="min-w-full divide-y divide-secondary-200" id="salesTable">
+                    <thead class="bg-secondary-100">
+                        <tr>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-secondary-700 uppercase tracking-wider border-b-2 border-secondary-300">
+                                <div class="flex items-center cursor-pointer" data-sort="id">
+                                    <i class="fas fa-hashtag text-secondary-500 mr-2"></i>Référence
+                                    <i class="fas fa-sort ml-1 text-secondary-400"></i>
+                                </div>
+                            </th>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-secondary-700 uppercase tracking-wider border-b-2 border-secondary-300">
+                                <div class="flex items-center cursor-pointer" data-sort="date">
+                                    <i class="fas fa-calendar-alt text-secondary-500 mr-2"></i>Date
+                                    <i class="fas fa-sort ml-1 text-secondary-400"></i>
+                                </div>
+                            </th>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-secondary-700 uppercase tracking-wider border-b-2 border-secondary-300">
+                                <div class="flex items-center cursor-pointer" data-sort="client">
+                                    <i class="fas fa-user text-secondary-500 mr-2"></i>Client
+                                    <i class="fas fa-sort ml-1 text-secondary-400"></i>
+                                </div>
+                            </th>
+                            <th scope="col" class="px-6 py-4 text-right text-xs font-medium text-secondary-700 uppercase tracking-wider border-b-2 border-secondary-300">
+                                <div class="flex items-center justify-end cursor-pointer" data-sort="total">
+                                    <i class="fas fa-money-bill-wave text-secondary-500 mr-2"></i>Total
+                                    <i class="fas fa-sort ml-1 text-secondary-400"></i>
+                                </div>
+                            </th>
+                            <th scope="col" class="px-6 py-4 text-center text-xs font-medium text-secondary-700 uppercase tracking-wider border-b-2 border-secondary-300">
+                                <div class="flex items-center justify-center">
+                                    <i class="fas fa-info-circle text-secondary-500 mr-2"></i>Statut
+                                </div>
+                            </th>
+                            <th scope="col" class="px-6 py-4 text-center text-xs font-medium text-secondary-700 uppercase tracking-wider border-b-2 border-secondary-300">
+                                Actions
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-secondary-200">
+                        {% for sale in sales %}
+                            <tr class="hover:bg-secondary-50 transition-all duration-150 group table-hover" 
+                                data-client="{{ sale.client.name|default:'Client occasionnel' }}" 
+                                data-status="{% if sale.paid_amount >= sale.total_amount %}paid{% elif sale.paid_amount > 0 %}partial{% else %}unpaid{% endif %}">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-secondary-900">#{{ sale.id }}</div>
+                                    <div class="text-xs text-secondary-500">{{ sale.created_by.username }}</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-secondary-900">{{ sale.sale_date|date:"d/m/Y" }}</div>
+                                    <div class="text-xs text-secondary-500">{{ sale.sale_date|date:"H:i" }}</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    {% if sale.client %}
+                                        <div class="flex items-center">
+                                            <div class="flex-shrink-0 h-8 w-8 bg-secondary-100 rounded-full flex items-center justify-center text-secondary-500">
+                                                <i class="fas fa-user"></i>
+                                            </div>
+                                            <div class="ml-3">
+                                                <div class="text-sm font-medium text-secondary-900">{{ sale.client.name }}</div>
+                                                {% if sale.client.phone %}
+                                                    <div class="text-xs text-secondary-500">{{ sale.client.phone }}</div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    {% else %}
+                                        <span class="text-secondary-500">Client occasionnel</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 text-right whitespace-nowrap">
+                                    <div class="text-sm font-medium text-secondary-900">{{ sale.total_amount }} FCFA</div>
+                                    {% if sale.paid_amount < sale.total_amount %}
+                                        <div class="text-xs text-red-600">Reste: {{ sale.total_amount|floatformat:2|slugify|add:"-"|add:sale.paid_amount|floatformat:2|slugify }} FCFA</div>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 text-center whitespace-nowrap">
+                                    {% if sale.paid_amount >= sale.total_amount %}
+                                        <span class="px-3 py-1.5 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 border border-green-200 shadow-sm">
+                                            <i class="fas fa-check-circle mr-1"></i> Payé
+                                        </span>
+                                    {% elif sale.paid_amount > 0 %}
+                                        <span class="px-3 py-1.5 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800 border border-yellow-200 shadow-sm">
+                                            <i class="fas fa-clock mr-1"></i> Partiellement payé
+                                        </span>
+                                    {% else %}
+                                        <span class="px-3 py-1.5 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800 border border-red-200 shadow-sm">
+                                            <i class="fas fa-exclamation-circle mr-1"></i> Non payé
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                                    <div class="flex justify-center gap-2 opacity-70 group-hover:opacity-100 transition-opacity duration-200">
+                                        <a href="{% url 'sale_detail' sale.id %}" 
+                                           class="bg-primary-100 hover:bg-primary-200 text-primary-700 hover:text-primary-800 p-2 rounded-md transition-colors duration-150" 
+                                           title="Voir détails">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{% url 'generate_invoice_pdf' sale.id %}" 
+                                           class="bg-secondary-100 hover:bg-secondary-200 text-secondary-700 hover:text-secondary-800 p-2 rounded-md transition-colors duration-150" 
+                                           title="Télécharger facture">
+                                            <i class="fas fa-file-pdf"></i>
+                                        </a>
+                                        <a href="{% url 'client_payment_create' %}?sale={{ sale.id }}" 
+                                        class="bg-green-100 hover:bg-green-200 text-green-700 hover:text-green-800 p-2 rounded-md transition-colors duration-150" 
+                                        title="Ajouter paiement">
+                                         <i class="fas fa-money-bill-wave"></i>
+                                     </a>
+                                 </div>
+                             </td>
+                         </tr>
+                     {% endfor %}
+                 </tbody>
+             </table>
+         </div>
+
+         <!-- Pagination -->
+         <div class="bg-secondary-50 px-4 sm:px-6 py-3 sm:py-4 border-t border-secondary-200 flex items-center justify-between">
+             <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                 <div>
+                     <p class="text-sm text-secondary-700">
+                         Affichage de <span class="font-medium">{{ sales|length }}</span> ventes
+                     </p>
+                 </div>
+                 <div>
+                     <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                         <a href="#" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-secondary-300 bg-white text-sm font-medium text-secondary-500 hover:bg-secondary-50">
+                             <span class="sr-only">Précédent</span>
+                             <i class="fas fa-chevron-left"></i>
+                         </a>
+                         <a href="#" class="relative inline-flex items-center px-4 py-2 border border-secondary-300 bg-white text-sm font-medium text-secondary-700 hover:bg-secondary-50">1</a>
+                         <a href="#" class="relative inline-flex items-center px-4 py-2 border border-secondary-300 bg-primary-50 text-sm font-medium text-primary-600 hover:bg-primary-100">2</a>
+                         <a href="#" class="relative inline-flex items-center px-4 py-2 border border-secondary-300 bg-white text-sm font-medium text-secondary-700 hover:bg-secondary-50">3</a>
+                         <a href="#" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-secondary-300 bg-white text-sm font-medium text-secondary-500 hover:bg-secondary-50">
+                             <span class="sr-only">Suivant</span>
+                             <i class="fas fa-chevron-right"></i>
+                         </a>
+                     </nav>
+                 </div>
+             </div>
+             <div class="flex sm:hidden justify-between w-full">
+                 <a href="#" class="relative inline-flex items-center px-4 py-2 border border-secondary-300 text-sm font-medium rounded-md text-secondary-700 bg-white hover:bg-secondary-50">Précédent</a>
+                 <a href="#" class="relative inline-flex items-center px-4 py-2 border border-secondary-300 text-sm font-medium rounded-md text-secondary-700 bg-white hover:bg-secondary-50">Suivant</a>
+             </div>
+         </div>
+     {% else %}
+         <div class="flex flex-col items-center justify-center py-12 px-4 text-center">
+             <div class="text-secondary-400 bg-secondary-100 p-6 rounded-full mb-4 border-4 border-secondary-200">
+                 <i class="fas fa-cash-register text-4xl"></i>
+             </div>
+             <h3 class="text-lg font-medium text-secondary-900 mb-2">Aucune vente trouvée</h3>
+             <p class="text-secondary-500 max-w-md mb-6">
+                 Vous n'avez pas encore enregistré de ventes. Commencez par créer une nouvelle vente pour suivre vos transactions.
+             </p>
+             <a href="{% url 'sale_create' %}" 
+                class="px-4 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 flex items-center gap-2 transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-lg">
+                 <i class="fas fa-plus-circle"></i>
+                 <span>Créer une vente</span>
+             </a>
+         </div>
+     {% endif %}
+ </div>
+</div>
+
+<!-- Export Modal -->
+<div id="exportModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+ <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 transform transition-all duration-300 scale-95 opacity-0" id="exportModalContent">
+     <div class="bg-primary-600 text-white px-6 py-4 rounded-t-lg flex justify-between items-center">
+         <h3 class="text-lg font-semibold">Exporter les ventes</h3>
+         <button id="closeExportModal" class="text-white hover:text-primary-200 transition-colors duration-150">
+             <i class="fas fa-times"></i>
+         </button>
+     </div>
+     <div class="p-6">
+         <p class="text-secondary-700 mb-4">
+             Sélectionnez le format et la période pour l'exportation des données de ventes.
+         </p>
+         
+         <form id="exportForm" class="space-y-4">
+             <div>
+                 <label class="block text-sm font-medium text-secondary-700 mb-1">Format d'exportation</label>
+                 <div class="flex gap-4">
+                     <label class="flex items-center">
+                         <input type="radio" name="format" value="pdf" checked class="text-primary-600 focus:ring-primary-500 h-4 w-4">
+                         <span class="ml-2 text-secondary-700">PDF</span>
+                     </label>
+                     <label class="flex items-center">
+                         <input type="radio" name="format" value="csv" class="text-primary-600 focus:ring-primary-500 h-4 w-4">
+                         <span class="ml-2 text-secondary-700">CSV</span>
+                     </label>
+                     <label class="flex items-center">
+                         <input type="radio" name="format" value="excel" class="text-primary-600 focus:ring-primary-500 h-4 w-4">
+                         <span class="ml-2 text-secondary-700">Excel</span>
+                     </label>
+                 </div>
+             </div>
+             
+             <div>
+                 <label class="block text-sm font-medium text-secondary-700 mb-1">Période</label>
+                 <div class="grid grid-cols-2 gap-4">
+                     <div>
+                         <label class="text-xs text-secondary-500">Date de début</label>
+                         <input type="date" name="start_date" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 block shadow-sm sm:text-sm border-secondary-300">
+                     </div>
+                     <div>
+                         <label class="text-xs text-secondary-500">Date de fin</label>
+                         <input type="date" name="end_date" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 block shadow-sm sm:text-sm border-secondary-300">
+                     </div>
+                 </div>
+             </div>
+             
+             <div>
+                 <label class="block text-sm font-medium text-secondary-700 mb-1">Options</label>
+                 <div class="space-y-2">
+                     <label class="flex items-center">
+                         <input type="checkbox" name="include_details" checked class="rounded text-primary-600 focus:ring-primary-500 h-4 w-4">
+                         <span class="ml-2 text-secondary-700">Inclure les détails des articles</span>
+                     </label>
+                     <label class="flex items-center">
+                         <input type="checkbox" name="include_payments" checked class="rounded text-primary-600 focus:ring-primary-500 h-4 w-4">
+                         <span class="ml-2 text-secondary-700">Inclure les paiements</span>
+                     </label>
+                 </div>
+             </div>
+             
+             <div class="flex justify-end space-x-3 pt-4">
+                 <button type="button" id="cancelExport" class="px-4 py-2 bg-secondary-200 text-secondary-800 rounded-lg font-medium hover:bg-secondary-300 focus:outline-none focus:ring-2 focus:ring-secondary-400 focus:ring-offset-2 transition-all duration-200">
+                     Annuler
+                 </button>
+                 <button type="submit" class="px-4 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-all duration-200 flex items-center gap-2">
+                     <i class="fas fa-file-export"></i>
+                     <span>Exporter</span>
+                 </button>
+             </div>
+         </form>
+     </div>
+ </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+ /* Enhanced animations */
+ @keyframes fade-in-up {
+     from {
+         opacity: 0;
+         transform: translateY(20px);
+     }
+     to {
+         opacity: 1;
+         transform: translateY(0);
+     }
+ }
+ 
+ .animate-fade-in-up {
+     animation: fade-in-up 0.4s ease-out forwards;
+ }
+ 
+ /* Enhanced table styles */
+ #salesTable {
+     border-collapse: separate;
+     border-spacing: 0;
+ }
+ 
+ #salesTable th {
+     position: sticky;
+     top: 0;
+     z-index: 10;
+     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+ }
+ 
+ #salesTable tr:hover {
+     box-shadow: 0 0 0 2px #e0f2fe;
+ }
+ 
+ /* Modal animation */
+ @keyframes modal-in {
+     from {
+         opacity: 0;
+         transform: scale(0.95);
+     }
+     to {
+         opacity: 1;
+         transform: scale(1);
+     }
+ }
+ 
+ .modal-animate-in {
+     animation: modal-in 0.3s ease-out forwards;
+ }
+ 
+ /* Sort indicators */
+ .sort-asc::after {
+     content: "↑";
+     margin-left: 4px;
+     color: #0ea5e9;
+ }
+ 
+ .sort-desc::after {
+     content: "↓";
+     margin-left: 4px;
+     color: #0ea5e9;
+ }
+ 
+ /* Filter badge */
+ .filter-badge {
+     position: absolute;
+     top: -5px;
+     right: -5px;
+     background-color: #ef4444;
+     color: white;
+     border-radius: 50%;
+     width: 18px;
+     height: 18px;
+     font-size: 10px;
+     display: flex;
+     align-items: center;
+     justify-content: center;
+ }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+ // Search functionality
+ const searchInput = document.getElementById('saleSearch');
+ const table = document.getElementById('salesTable');
+ 
+ if (searchInput && table) {
+     searchInput.addEventListener('keyup', function() {
+         const searchTerm = this.value.toLowerCase();
+         const rows = table.querySelectorAll('tbody tr');
+         let hasResults = false;
+         
+         rows.forEach(row => {
+             const id = row.querySelector('td:first-child').textContent.toLowerCase();
+             const client = row.querySelector('td:nth-child(3)').textContent.toLowerCase();
+             
+             if (id.includes(searchTerm) || client.includes(searchTerm)) {
+                 row.style.display = '';
+                 hasResults = true;
+             } else {
+                 row.style.display = 'none';
+             }
+         });
+         
+         // Show empty state if no results
+         const emptyState = document.getElementById('emptySearchState');
+         if (!hasResults) {
+             if (!emptyState) {
+                 const tbody = table.querySelector('tbody');
+                 const emptyRow = document.createElement('tr');
+                 emptyRow.id = 'emptySearchState';
+                 emptyRow.innerHTML = `
+                     <td colspan="6" class="px-6 py-12 text-center">
+                         <div class="flex flex-col items-center">
+                             <div class="text-secondary-400 mb-2">
+                                 <i class="fas fa-search text-2xl"></i>
+                             </div>
+                             <p class="text-secondary-500">Aucun résultat pour "<span class="font-medium">${searchTerm}</span>"</p>
+                             <button id="clearSearch" class="mt-4 text-primary-600 hover:text-primary-800 font-medium flex items-center gap-1">
+                                 <i class="fas fa-times-circle"></i> Effacer la recherche
+                             </button>
+                         </div>
+                     </td>
+                 `;
+                 tbody.appendChild(emptyRow);
+                 
+                 // Add clear search functionality
+                 document.getElementById('clearSearch').addEventListener('click', function() {
+                     searchInput.value = '';
+                     searchInput.dispatchEvent(new Event('keyup'));
+                     searchInput.focus();
+                 });
+             }
+         } else if (emptyState) {
+             emptyState.remove();
+         }
+     });
+ }
+ 
+ // Filter dropdown toggle
+ const filterButton = document.getElementById('filterButton');
+ const filterDropdown = document.getElementById('filterDropdown');
+ 
+ if (filterButton && filterDropdown) {
+     filterButton.addEventListener('click', function() {
+         filterDropdown.classList.toggle('hidden');
+     });
+     
+     // Close dropdown when clicking outside
+     document.addEventListener('click', function(event) {
+         if (!filterButton.contains(event.target) && !filterDropdown.contains(event.target)) {
+             filterDropdown.classList.add('hidden');
+            }
+        });
+        
+        // Populate client filter options
+        const clientFilter = document.getElementById('clientFilter');
+        if (clientFilter) {
+            const clients = new Set();
+            table.querySelectorAll('tbody tr').forEach(row => {
+                const client = row.getAttribute('data-client');
+                if (client) {
+                    clients.add(client);
+                }
+            });
+            
+            clients.forEach(client => {
+                const option = document.createElement('option');
+                option.value = client;
+                option.textContent = client;
+                clientFilter.appendChild(option);
+            });
+        }
+        
+        // Apply filters
+        const applyFiltersBtn = document.getElementById('applyFilters');
+        const paidFilter = document.getElementById('paidFilter');
+        const unpaidFilter = document.getElementById('unpaidFilter');
+        const startDateInput = document.getElementById('startDate');
+        const endDateInput = document.getElementById('endDate');
+        
+        if (applyFiltersBtn && clientFilter && paidFilter && unpaidFilter) {
+            applyFiltersBtn.addEventListener('click', function() {
+                const selectedClient = clientFilter.value;
+                const showPaid = paidFilter.checked;
+                const showUnpaid = unpaidFilter.checked;
+                const startDate = startDateInput.value ? new Date(startDateInput.value) : null;
+                const endDate = endDateInput.value ? new Date(endDateInput.value) : null;
+                
+                let activeFilters = 0;
+                if (selectedClient) activeFilters++;
+                if (showPaid || showUnpaid) activeFilters++;
+                if (startDate || endDate) activeFilters++;
+                
+                // Update filter badge
+                let badge = filterButton.querySelector('.filter-badge');
+                if (activeFilters > 0) {
+                    if (!badge) {
+                        badge = document.createElement('span');
+                        badge.className = 'filter-badge';
+                        filterButton.appendChild(badge);
+                    }
+                    badge.textContent = activeFilters;
+                } else if (badge) {
+                    badge.remove();
+                }
+                
+                // Apply filters to table rows
+                const rows = table.querySelectorAll('tbody tr');
+                rows.forEach(row => {
+                    const rowClient = row.getAttribute('data-client');
+                    const rowStatus = row.getAttribute('data-status');
+                    const rowDateStr = row.querySelector('td:nth-child(2) .text-sm').textContent.split('/').reverse().join('-');
+                    const rowDate = new Date(rowDateStr);
+                    
+                    let showRow = true;
+                    
+                    if (selectedClient && rowClient !== selectedClient) {
+                        showRow = false;
+                    }
+                    
+                    if (showPaid && !showUnpaid && rowStatus !== 'paid') {
+                        showRow = false;
+                    }
+                    
+                    if (!showPaid && showUnpaid && rowStatus === 'paid') {
+                        showRow = false;
+                    }
+                    
+                    if (startDate && rowDate < startDate) {
+                        showRow = false;
+                    }
+                    
+                    if (endDate && rowDate > endDate) {
+                        showRow = false;
+                    }
+                    
+                    row.style.display = showRow ? '' : 'none';
+                });
+                
+                filterDropdown.classList.add('hidden');
+                
+                // Show notification
+                showNotification(`Filtres appliqués (${activeFilters})`, 'info');
+            });
+        }
+    }
+    
+    // Sorting functionality
+    const sortableHeaders = document.querySelectorAll('[data-sort]');
+    let currentSort = { column: null, direction: 'asc' };
+    
+    sortableHeaders.forEach(header => {
+        header.addEventListener('click', function() {
+            const column = this.getAttribute('data-sort');
+            
+            // Update sort direction
+            if (currentSort.column === column) {
+                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.column = column;
+                currentSort.direction = 'asc';
+            }
+            
+            // Update sort indicators
+            sortableHeaders.forEach(h => {
+                h.classList.remove('sort-asc', 'sort-desc');
+            });
+            this.classList.add(currentSort.direction === 'asc' ? 'sort-asc' : 'sort-desc');
+            
+            // Sort rows
+            const tbody = table.querySelector('tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr:not(#emptySearchState)'));
+            
+            rows.sort((a, b) => {
+                let aValue, bValue;
+                
+                switch(column) {
+                    case 'id':
+                        aValue = parseInt(a.querySelector('td:nth-child(1) .text-sm').textContent.replace('#', ''));
+                        bValue = parseInt(b.querySelector('td:nth-child(1) .text-sm').textContent.replace('#', ''));
+                        break;
+                    case 'date':
+                        const aDateParts = a.querySelector('td:nth-child(2) .text-sm').textContent.split('/');
+                        const bDateParts = b.querySelector('td:nth-child(2) .text-sm').textContent.split('/');
+                        aValue = new Date(`${aDateParts[2]}-${aDateParts[1]}-${aDateParts[0]}`);
+                        bValue = new Date(`${bDateParts[2]}-${bDateParts[1]}-${bDateParts[0]}`);
+                        break;
+                    case 'client':
+                        aValue = a.querySelector('td:nth-child(3)').textContent.trim().toLowerCase();
+                        bValue = b.querySelector('td:nth-child(3)').textContent.trim().toLowerCase();
+                        break;
+                    case 'total':
+                        aValue = parseFloat(a.querySelector('td:nth-child(4) .text-sm').textContent.replace('FCFA', '').trim());
+                        bValue = parseFloat(b.querySelector('td:nth-child(4) .text-sm').textContent.replace('FCFA', '').trim());
+                        break;
+                    default:
+                        return 0;
+                }
+                
+                if (aValue === bValue) return 0;
+                
+                const comparison = aValue > bValue ? 1 : -1;
+                return currentSort.direction === 'asc' ? comparison : -comparison;
+            });
+            
+            // Re-append rows in new order
+            rows.forEach(row => tbody.appendChild(row));
+            
+            // Show sorting notification
+            showNotification(`Trié par ${getColumnName(column)} (${currentSort.direction === 'asc' ? 'croissant' : 'décroissant'})`, 'info');
+        });
+    });
+    
+    function getColumnName(column) {
+        switch(column) {
+            case 'id': return 'référence';
+            case 'date': return 'date';
+            case 'client': return 'client';
+            case 'total': return 'montant total';
+            default: return column;
+        }
+    }
+    
+    // Sort button functionality
+    const sortButton = document.getElementById('sortButton');
+    if (sortButton) {
+        sortButton.addEventListener('click', function() {
+            // Create sort dropdown
+            let sortDropdown = document.getElementById('sortDropdown');
+            
+            if (!sortDropdown) {
+                sortDropdown = document.createElement('div');
+                sortDropdown.id = 'sortDropdown';
+                sortDropdown.className = 'absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-secondary-200 z-10';
+                sortDropdown.innerHTML = `
+                    <div class="py-1">
+                        <button class="sort-option w-full text-left px-4 py-2 hover:bg-secondary-100" data-sort="date" data-direction="desc">
+                            <i class="fas fa-calendar-alt mr-2"></i> Date (récent → ancien)
+                        </button>
+                        <button class="sort-option w-full text-left px-4 py-2 hover:bg-secondary-100" data-sort="date" data-direction="asc">
+                            <i class="fas fa-calendar-alt mr-2"></i> Date (ancien → récent)
+                        </button>
+                        <button class="sort-option w-full text-left px-4 py-2 hover:bg-secondary-100" data-sort="total" data-direction="desc">
+                            <i class="fas fa-sort-amount-down mr-2"></i> Montant (décroissant)
+                        </button>
+                        <button class="sort-option w-full text-left px-4 py-2 hover:bg-secondary-100" data-sort="total" data-direction="asc">
+                            <i class="fas fa-sort-amount-up mr-2"></i> Montant (croissant)
+                        </button>
+                        <button class="sort-option w-full text-left px-4 py-2 hover:bg-secondary-100" data-sort="id" data-direction="desc">
+                            <i class="fas fa-hashtag mr-2"></i> Référence (décroissant)
+                        </button>
+                        <button class="sort-option w-full text-left px-4 py-2 hover:bg-secondary-100" data-sort="id" data-direction="asc">
+                            <i class="fas fa-hashtag mr-2"></i> Référence (croissant)
+                        </button>
+                    </div>
+                `;
+                
+                sortButton.parentNode.appendChild(sortDropdown);
+                
+                // Add event listeners to sort options
+                sortDropdown.querySelectorAll('.sort-option').forEach(option => {
+                    option.addEventListener('click', function() {
+                        const column = this.getAttribute('data-sort');
+                        const direction = this.getAttribute('data-direction');
+                        
+                        // Find and click the corresponding header
+                        const header = document.querySelector(`[data-sort="${column}"]`);
+                        if (header) {
+                            // Set current sort to match desired direction
+                            currentSort.column = column;
+                            currentSort.direction = direction === 'asc' ? 'desc' : 'asc'; // Toggle because click will toggle it again
+                            
+                            header.click();
+                        }
+                        
+                        sortDropdown.remove();
+                    });
+                });
+                
+                // Close dropdown when clicking outside
+                document.addEventListener('click', function(event) {
+                    if (!sortButton.contains(event.target) && !sortDropdown.contains(event.target)) {
+                        sortDropdown.remove();
+                    }
+                });
+            } else {
+                sortDropdown.remove();
+            }
+        });
+    }
+    
+    // Export functionality
+    const exportButton = document.getElementById('exportButton');
+    const exportModal = document.getElementById('exportModal');
+    const exportModalContent = document.getElementById('exportModalContent');
+    const closeExportModal = document.getElementById('closeExportModal');
+    const cancelExport = document.getElementById('cancelExport');
+    const exportForm = document.getElementById('exportForm');
+    
+    if (exportButton && exportModal) {
+        exportButton.addEventListener('click', function() {
+            exportModal.classList.remove('hidden');
+            setTimeout(() => {
+                exportModalContent.classList.remove('scale-95', 'opacity-0');
+                exportModalContent.classList.add('modal-animate-in');
+            }, 10);
+        });
+        
+        function closeExportModalFunction() {
+            exportModalContent.classList.add('scale-95', 'opacity-0');
+            exportModalContent.classList.remove('modal-animate-in');
+            setTimeout(() => {
+                exportModal.classList.add('hidden');
+            }, 300);
+        }
+        
+        if (closeExportModal) {
+            closeExportModal.addEventListener('click', closeExportModalFunction);
+        }
+        
+        if (cancelExport) {
+            cancelExport.addEventListener('click', closeExportModalFunction);
+        }
+        
+        // Close modal when clicking outside
+        exportModal.addEventListener('click', function(e) {
+            if (e.target === exportModal) {
+                closeExportModalFunction();
+            }
+        });
+        
+        // Handle export form submission
+        if (exportForm) {
+            exportForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const format = document.querySelector('input[name="format"]:checked').value;
+                const startDate = document.querySelector('input[name="start_date"]').value;
+                const endDate = document.querySelector('input[name="end_date"]').value;
+                const includeDetails = document.querySelector('input[name="include_details"]').checked;
+                const includePayments = document.querySelector('input[name="include_payments"]').checked;
+                
+                // Build query string
+                let queryParams = `?format=${format}`;
+                if (startDate) queryParams += `&start_date=${startDate}`;
+                if (endDate) queryParams += `&end_date=${endDate}`;
+                if (includeDetails) queryParams += `&include_details=1`;
+                if (includePayments) queryParams += `&include_payments=1`;
+                
+                // Redirect to export URL
+                window.location.href = `/sales/export/${queryParams}`;
+                
+                closeExportModalFunction();
+                showNotification(`Exportation des ventes au format ${format.toUpperCase()} en cours...`, 'info');
+            });
+        }
+    }
+    
+    // Notification helper
+    function showNotification(message, type = 'info') {
+        // Check if notification container exists, create if not
+        let notificationContainer = document.getElementById('notificationContainer');
+        if (!notificationContainer) {
+            notificationContainer = document.createElement('div');
+            notificationContainer.id = 'notificationContainer';
+            notificationContainer.className = 'fixed bottom-4 right-4 z-50 flex flex-col gap-2';
+            document.body.appendChild(notificationContainer);
+        }
+        
+        // Create notification with appropriate styling based on type
+        const notification = document.createElement('div');
+        let bgColor, textColor, icon;
+        
+        switch(type) {
+            case 'success':
+                bgColor = 'bg-green-100 border-l-4 border-green-500';
+                textColor = 'text-green-800';
+                icon = 'fa-check-circle';
+                break;
+            case 'error':
+                bgColor = 'bg-red-100 border-l-4 border-red-500';
+                textColor = 'text-red-800';
+                icon = 'fa-exclamation-circle';
+                break;
+            case 'warning':
+                bgColor = 'bg-yellow-100 border-l-4 border-yellow-500';
+                textColor = 'text-yellow-800';
+                icon = 'fa-exclamation-triangle';
+                break;
+            default: // info
+                bgColor = 'bg-blue-100 border-l-4 border-blue-500';
+                textColor = 'text-blue-800';
+                icon = 'fa-info-circle';
+        }
+        
+        notification.className = `${bgColor} ${textColor} px-4 py-3 rounded-lg shadow-lg mb-2 transform transition-all duration-300 translate-y-2 opacity-0 flex items-center max-w-md`;
+        notification.innerHTML = `
+                        <i class="fas ${icon} mr-2 text-lg"></i>
+            <div class="flex-1">${message}</div>
+            <button class="ml-2 text-secondary-400 hover:text-secondary-600 focus:outline-none">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+        
+        notificationContainer.appendChild(notification);
+        
+        // Animate in
+        setTimeout(() => {
+            notification.classList.remove('translate-y-2', 'opacity-0');
+        }, 10);
+        
+        // Add close button functionality
+        const closeBtn = notification.querySelector('button');
+        closeBtn.addEventListener('click', () => {
+            notification.classList.add('translate-y-2', 'opacity-0');
+            setTimeout(() => {
+                notification.remove();
+            }, 300);
+        });
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.remove();
+                    }
+                }, 300);
+            }
+        }, 5000);
+    }
+});
+</script>
+{% endblock %}

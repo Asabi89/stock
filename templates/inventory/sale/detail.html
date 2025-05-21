@@ -1,0 +1,426 @@
+{% extends "base.html" %}
+
+{% block title %}Détails de la vente #{{ sale.id }} - Gestion de Stock{% endblock %}
+
+{% block header_title %}Détails de la vente{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in-up">
+    <!-- Header with actions -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+        <div>
+            <h2 class="text-xl md:text-2xl font-bold text-secondary-800 flex items-center">
+                <i class="fas fa-cash-register text-primary-600 mr-3"></i>
+                <span>Vente #{{ sale.id }}</span>
+            </h2>
+            <p class="text-sm text-secondary-500 mt-1">
+                Effectuée le {{ sale.sale_date|date:"d/m/Y à H:i" }}
+            </p>
+        </div>
+        <div class="flex gap-2">
+            <a href="{% url 'sale_list' %}" 
+               class="px-4 py-2 bg-secondary-200 text-secondary-800 rounded-lg font-medium hover:bg-secondary-300 focus:outline-none focus:ring-2 focus:ring-secondary-400 focus:ring-offset-2 flex items-center gap-2 transition-all duration-200">
+                <i class="fas fa-arrow-left"></i>
+                <span>Retour</span>
+            </a>
+            <a href="{% url 'client_payment_create' %}?sale={{ sale.id }}" 
+               class="px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 flex items-center gap-2 transition-all duration-200">
+                <i class="fas fa-money-bill-wave"></i>
+                <span>Ajouter un paiement</span>
+            </a>
+            <a href="{% url 'generate_invoice_pdf' sale.id %}" 
+               class="px-4 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 flex items-center gap-2 transition-all duration-200">
+                <i class="fas fa-file-pdf"></i>
+                <span>Facture PDF</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Sale details -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <!-- Main info -->
+        <div class="bg-white rounded-lg shadow-md border border-secondary-200 lg:col-span-2">
+            <div class="p-6">
+                <h3 class="text-lg font-semibold text-secondary-800 mb-4 pb-2 border-b border-secondary-200">
+                    Informations générales
+                </h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <div class="mb-4">
+                            <h4 class="text-sm font-medium text-secondary-500 mb-1">Client</h4>
+                            <p class="text-secondary-900 font-semibold">{{ sale.client.name|default:"Client anonyme" }}</p>
+                            {% if sale.client.phone %}
+                                <p class="text-xs text-secondary-500 mt-1">
+                                    <i class="fas fa-phone mr-1"></i> {{ sale.client.phone }}
+                                </p>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-4">
+                            <h4 class="text-sm font-medium text-secondary-500 mb-1">Date de vente</h4>
+                            <p class="text-secondary-900">{{ sale.sale_date|date:"d/m/Y à H:i" }}</p>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <h4 class="text-sm font-medium text-secondary-500 mb-1">Créé par</h4>
+                            <p class="text-secondary-900">{{ sale.created_by.username }}</p>
+                            <p class="text-xs text-secondary-500 mt-1">
+                                Le {{ sale.created_at|date:"d/m/Y à H:i" }}
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <div class="mb-4">
+                            <h4 class="text-sm font-medium text-secondary-500 mb-1">Montant total</h4>
+                            <p class="text-secondary-900 font-semibold text-lg">{{ sale.total_amount }} FCFA</p>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <h4 class="text-sm font-medium text-secondary-500 mb-1">Montant payé</h4>
+                            <p class="text-secondary-900">{{ sale.paid_amount }} FCFA</p>
+                            <p class="text-xs {% if sale.is_fully_paid %}text-green-600{% else %}text-red-600{% endif %} mt-1">
+                                {% if sale.is_fully_paid %}
+                                    <i class="fas fa-check-circle mr-1"></i> Entièrement payé
+                                {% else %}
+                                    <i class="fas fa-exclamation-circle mr-1"></i> Reste à payer: {{ sale.balance_due }} FCFA
+                                {% endif %}
+                            </p>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <h4 class="text-sm font-medium text-secondary-500 mb-1">Statut</h4>
+                            {% if sale.payment_status == 'paid' %}
+                                <span class="px-3 py-1.5 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 border border-green-200 shadow-sm">
+                                    <i class="fas fa-check-circle mr-1"></i> Payé
+                                </span>
+                            {% elif sale.payment_status == 'partial' %}
+                                <span class="px-3 py-1.5 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800 border border-yellow-200 shadow-sm">
+                                    <i class="fas fa-clock mr-1"></i> Partiellement payé
+                                </span>
+                            {% else %}
+                                <span class="px-3 py-1.5 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800 border border-red-200 shadow-sm">
+                                    <i class="fas fa-exclamation-circle mr-1"></i> Non payé
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Client info -->
+        <div class="bg-white rounded-lg shadow-md border border-secondary-200">
+            <div class="p-6">
+                <h3 class="text-lg font-semibold text-secondary-800 mb-4 pb-2 border-b border-secondary-200">
+                    Détails du client
+                </h3>
+                
+                {% if sale.client %}
+                <div class="flex items-center mb-4">
+                    <div class="flex-shrink-0 h-12 w-12 bg-primary-100 rounded-full flex items-center justify-center text-primary-600">
+                        <i class="fas fa-user text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h4 class="text-lg font-medium text-secondary-900">{{ sale.client.name }}</h4>
+                        <p class="text-sm text-secondary-500">Client #{{ sale.client.id }}</p>
+                    </div>
+                </div>
+                
+                <div class="space-y-3">
+                    {% if sale.client.address %}
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0 h-5 w-5 text-secondary-500">
+                                <i class="fas fa-map-marker-alt"></i>
+                            </div>
+                            <div class="ml-3 text-sm text-secondary-700">
+                                {{ sale.client.address }}
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    {% if sale.client.phone %}
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0 h-5 w-5 text-secondary-500">
+                                <i class="fas fa-phone"></i>
+                            </div>
+                            <div class="ml-3 text-sm text-secondary-700">
+                                {{ sale.client.phone }}
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    {% if sale.client.email %}
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0 h-5 w-5 text-secondary-500">
+                                <i class="fas fa-envelope"></i>
+                            </div>
+                            <div class="ml-3 text-sm text-secondary-700">
+                                {{ sale.client.email }}
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="mt-6">
+                    <a href="{% url 'client_edit' sale.client.id %}" 
+                       class="text-primary-600 hover:text-primary-800 text-sm font-medium flex items-center">
+                        <i class="fas fa-edit mr-1"></i> Modifier les informations
+                    </a>
+                </div>
+                {% else %}
+                <div class="flex items-center justify-center py-6">
+                    <div class="text-center">
+                        <div class="flex-shrink-0 h-16 w-16 bg-secondary-100 rounded-full flex items-center justify-center text-secondary-500 mx-auto mb-3">
+                            <i class="fas fa-user-slash text-xl"></i>
+                        </div>
+                        <h4 class="text-lg font-medium text-secondary-900">Client anonyme</h4>
+                        <p class="text-sm text-secondary-500 mt-1">Aucun client associé à cette vente</p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+        <!-- Sale items -->
+        <div class="bg-white rounded-lg shadow-md border border-secondary-200 mb-6">
+            <div class="p-6">
+                <h3 class="text-lg font-semibold text-secondary-800 mb-4 pb-2 border-b border-secondary-200">
+                    Articles vendus
+                </h3>
+                
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-secondary-200">
+                        <thead class="bg-secondary-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-secondary-700 uppercase tracking-wider">
+                                    Produit
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-secondary-700 uppercase tracking-wider">
+                                    Quantité
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-secondary-700 uppercase tracking-wider">
+                                    Prix unitaire
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-secondary-700 uppercase tracking-wider">
+                                    Sous-total
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-secondary-200">
+                            {% for item in items %}
+                                <tr class="hover:bg-secondary-50">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center">
+                                            <div class="flex-shrink-0 h-10 w-10 bg-secondary-100 rounded-full flex items-center justify-center text-secondary-500">
+                                                <i class="fas fa-box"></i>
+                                            </div>
+                                            <div class="ml-4">
+                                                <div class="text-sm font-medium text-secondary-900">{{ item.product.name }}</div>
+                                                <div class="text-xs text-secondary-500">ID: {{ item.product.id }}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm text-secondary-900">
+                                        {{ item.quantity }} {{ item.product.unit }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm text-secondary-900">
+                                        {{ item.unit_price }} FCFA
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-secondary-900">
+                                        {{ item.get_subtotal }} FCFA
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot class="bg-secondary-50">
+                            <tr>
+                                <td colspan="3" class="px-6 py-4 text-right font-medium text-secondary-700">
+                                    Total:
+                                </td>
+                                <td class="px-6 py-4 text-right font-medium text-secondary-900">
+                                    {{ sale.total_amount }} FCFA
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Payments -->
+        <div class="bg-white rounded-lg shadow-md border border-secondary-200 mb-6">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4 pb-2 border-b border-secondary-200">
+                    <h3 class="text-lg font-semibold text-secondary-800">
+                        Historique des paiements
+                    </h3>
+                    <a href="{% url 'client_payment_create' %}?sale={{ sale.id }}" 
+                    class="text-primary-600 hover:text-primary-800 text-sm font-medium flex items-center">
+                    <i class="fas fa-plus-circle mr-1"></i> Ajouter un paiement
+                </a>
+            </div>
+            
+            {% with payments=sale.payment_set.all %}
+            {% if payments %}
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-secondary-200">
+                    <thead class="bg-secondary-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-secondary-700 uppercase tracking-wider">
+                                Date
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-secondary-700 uppercase tracking-wider">
+                                Méthode
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-secondary-700 uppercase tracking-wider">
+                                Montant
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-secondary-700 uppercase tracking-wider">
+                                Notes
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-secondary-200">
+                        {% for payment in payments %}
+                            <tr class="hover:bg-secondary-50">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-secondary-900">{{ payment.payment_date|date:"d/m/Y" }}</div>
+                                    <div class="text-xs text-secondary-500">{{ payment.payment_date|date:"H:i" }}</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-secondary-100 text-secondary-800">
+                                        {{ payment.get_payment_method_display }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-secondary-900">
+                                    {{ payment.amount }} FCFA
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-secondary-500">
+                                    {{ payment.notes|default:"-" }}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot class="bg-secondary-50">
+                        <tr>
+                            <td colspan="2" class="px-6 py-4 text-right font-medium text-secondary-700">
+                                Total payé:
+                            </td>
+                            <td class="px-6 py-4 text-right font-medium text-secondary-900">
+                                {{ sale.paid_amount }} FCFA
+                            </td>
+                            <td></td>
+                        </tr>
+                        {% if sale.balance_due > 0 %}
+                        <tr>
+                            <td colspan="2" class="px-6 py-4 text-right font-medium text-red-600">
+                                Reste à payer:
+                            </td>
+                            <td class="px-6 py-4 text-right font-medium text-red-600">
+                                {{ sale.balance_due }} FCFA
+                            </td>
+                            <td></td>
+                        </tr>
+                        {% endif %}
+                    </tfoot>
+                </table>
+            </div>
+            {% else %}
+            <div class="flex items-center justify-center py-6 border border-dashed border-secondary-300 rounded-lg">
+                <div class="text-center">
+                    <div class="flex-shrink-0 h-12 w-12 bg-secondary-100 rounded-full flex items-center justify-center text-secondary-500 mx-auto mb-3">
+                        <i class="fas fa-money-bill-wave text-xl"></i>
+                    </div>
+                    <h4 class="text-secondary-900 font-medium">Aucun paiement enregistré</h4>
+                    <p class="text-sm text-secondary-500 mt-1">Ajoutez un paiement pour cette vente</p>
+                    <div class="mt-4">
+                        <a href="{% url 'client_payment_create' %}?sale={{ sale.id }}" 
+                           class="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 inline-flex items-center gap-2">
+                            <i class="fas fa-plus-circle"></i>
+                            <span>Ajouter un paiement</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            {% endwith %}
+        </div>
+    </div>
+</div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Enhanced animations */
+@keyframes fade-in-up {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fade-in-up {
+    animation: fade-in-up 0.4s ease-out forwards;
+}
+
+/* Print styles */
+@media print {
+    body {
+        background-color: white;
+        font-size: 12pt;
+    }
+    
+    .no-print {
+        display: none !important;
+    }
+    
+    .page-break {
+        page-break-before: always;
+    }
+    
+    .print-full-width {
+        width: 100% !important;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+// Print functionality
+const printButtons = document.querySelectorAll('.print-button');
+if (printButtons.length > 0) {
+    printButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            window.print();
+        });
+    });
+}
+
+// Responsive adjustments for mobile
+function handleResponsiveLayout() {
+    const isMobile = window.innerWidth < 768;
+    
+    // Adjust table layout for mobile
+    if (isMobile) {
+        const tables = document.querySelectorAll('table');
+        tables.forEach(table => {
+            table.classList.add('text-sm');
+        });
+    }
+}
+
+// Call responsive adjustments on load and resize
+handleResponsiveLayout();
+window.addEventListener('resize', handleResponsiveLayout);
+});
+</script>
+{% endblock %}

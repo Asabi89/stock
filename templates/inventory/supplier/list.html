@@ -1,0 +1,693 @@
+{% extends "base.html" %}
+
+{% block title %}Fournisseurs - Gestion de Stock{% endblock %}
+
+{% block header_title %}Gestion des Fournisseurs{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in-up">
+    <!-- Header with actions -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+        <div>
+            <h2 class="text-xl md:text-2xl font-bold text-secondary-800 flex items-center">
+                <i class="fas fa-truck text-primary-600 mr-3"></i>
+                <span>Liste des fournisseurs</span>
+            </h2>
+            <p class="text-sm text-secondary-500 mt-1">Gérez vos fournisseurs et leurs informations</p>
+        </div>
+        <a href="{% url 'supplier_create' %}" 
+           class="px-4 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 flex items-center gap-2 self-start transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-lg">
+            <i class="fas fa-plus-circle"></i>
+            <span>Nouveau fournisseur</span>
+        </a>
+    </div>
+
+    <!-- Search and filters -->
+    <div class="bg-white rounded-lg shadow-md p-4 mb-6 border-l-4 border-primary-500">
+        <div class="flex flex-col sm:flex-row gap-4">
+            <div class="relative flex-grow">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <i class="fas fa-search text-secondary-400"></i>
+                </div>
+                <input type="text" 
+                       id="supplierSearch" 
+                       placeholder="Rechercher un fournisseur..." 
+                       class="pl-10 w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 block shadow-sm sm:text-sm border-secondary-300">
+            </div>
+            <div class="flex gap-2">
+                <button id="sortButton" 
+                        class="px-4 py-2 bg-secondary-200 text-secondary-800 rounded-lg font-medium hover:bg-secondary-300 focus:outline-none focus:ring-2 focus:ring-secondary-400 focus:ring-offset-2 flex items-center gap-2 transition-all duration-200">
+                    <i class="fas fa-sort"></i>
+                    <span class="hidden sm:inline">Trier</span>
+                </button>
+                <a href="#" 
+                   class="bg-green-600 text-white hover:bg-green-700 px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center gap-2">
+                    <i class="fas fa-file-export"></i>
+                    <span class="hidden sm:inline">Exporter</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Suppliers list -->
+    <div class="bg-white rounded-lg shadow-lg overflow-hidden border border-secondary-200">
+        {% if suppliers %}
+            <div class="overflow-x-auto responsive-table">
+                <table class="min-w-full divide-y divide-secondary-200" id="suppliersTable">
+                    <thead class="bg-secondary-100">
+                        <tr>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-secondary-700 uppercase tracking-wider border-b-2 border-secondary-300">
+                                <div class="flex items-center cursor-pointer" data-sort="name">
+                                    <i class="fas fa-building text-secondary-500 mr-2"></i>Nom
+                                    <i class="fas fa-sort ml-1 text-secondary-400"></i>
+                                </div>
+                            </th>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-secondary-700 uppercase tracking-wider border-b-2 border-secondary-300">
+                                <div class="flex items-center cursor-pointer" data-sort="contact">
+                                    <i class="fas fa-user text-secondary-500 mr-2"></i>Contact
+                                    <i class="fas fa-sort ml-1 text-secondary-400"></i>
+                                </div>
+                            </th>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-secondary-700 uppercase tracking-wider border-b-2 border-secondary-300">
+                                <div class="flex items-center cursor-pointer" data-sort="email">
+                                    <i class="fas fa-envelope text-secondary-500 mr-2"></i>Email
+                                    <i class="fas fa-sort ml-1 text-secondary-400"></i>
+                                </div>
+                            </th>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-secondary-700 uppercase tracking-wider border-b-2 border-secondary-300">
+                                <div class="flex items-center cursor-pointer" data-sort="phone">
+                                    <i class="fas fa-phone text-secondary-500 mr-2"></i>Téléphone
+                                    <i class="fas fa-sort ml-1 text-secondary-400"></i>
+                                </div>
+                            </th>
+                            <th scope="col" class="px-6 py-4 text-center text-xs font-medium text-secondary-700 uppercase tracking-wider border-b-2 border-secondary-300">
+                                Actions
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-secondary-200">
+                        {% for supplier in suppliers %}
+                            <tr class="hover:bg-secondary-50 transition-all duration-150 group table-hover">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0 h-10 w-10 bg-secondary-100 rounded-full flex items-center justify-center text-secondary-500">
+                                            <i class="fas fa-truck"></i>
+                                        </div>
+                                        <div class="ml-4">
+                                            <div class="text-sm font-medium text-secondary-900">{{ supplier.name }}</div>
+                                            <div class="text-xs text-secondary-500">ID: {{ supplier.id }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-secondary-900">{{ supplier.contact_name|default:"-" }}</div>
+                                    <div class="text-xs text-secondary-500">{{ supplier.address|default:"" }}</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    {% if supplier.email %}
+                                        <a href="mailto:{{ supplier.email }}" class="text-sm text-primary-600 hover:text-primary-800">
+                                            {{ supplier.email }}
+                                        </a>
+                                    {% else %}
+                                        <span class="text-secondary-400">-</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    {% if supplier.phone %}
+                                        <a href="tel:{{ supplier.phone }}" class="text-sm text-secondary-900">
+                                            {{ supplier.phone }}
+                                        </a>
+                                    {% else %}
+                                        <span class="text-secondary-400">-</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                                    <div class="flex justify-center gap-2 opacity-70 group-hover:opacity-100 transition-opacity duration-200">
+                                        <a href="{% url 'supplier_edit' supplier.id %}" 
+                                           class="bg-primary-100 hover:bg-primary-200 text-primary-700 hover:text-primary-800 p-2 rounded-md transition-colors duration-150" 
+                                           title="Modifier">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="{% url 'supplier_delete' supplier.id %}" 
+                                           class="bg-red-100 hover:bg-red-200 text-red-700 hover:text-red-800 p-2 rounded-md transition-colors duration-150" 
+                                           title="Supprimer">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </a>
+                                        <button class="view-details-btn bg-secondary-100 hover:bg-secondary-200 text-secondary-700 hover:text-secondary-800 p-2 rounded-md transition-colors duration-150" 
+                                                title="Voir détails" 
+                                                data-id="{{ supplier.id }}" 
+                                                data-name="{{ supplier.name }}">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="flex flex-col items-center justify-center py-12 px-4 text-center">
+                <div class="text-secondary-400 bg-secondary-100 p-6 rounded-full mb-4 border-4 border-secondary-200">
+                    <i class="fas fa-truck text-4xl"></i>
+                </div>
+                <h3 class="text-lg font-medium text-secondary-900 mb-2">Aucun fournisseur trouvé</h3>
+                <p class="text-secondary-500 max-w-md mb-6">
+                    Vous n'avez pas encore ajouté de fournisseurs. Commencez par ajouter des fournisseurs pour gérer vos approvisionnements.
+                </p>
+                <a href="{% url 'supplier_create' %}" 
+                   class="px-4 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 flex items-center gap-2 transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-lg">
+                    <i class="fas fa-plus-circle"></i>
+                    <span>Ajouter un fournisseur</span>
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Supplier Details Modal -->
+<div id="supplierDetailsModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+    <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 transform transition-all duration-300 scale-95 opacity-0" id="modalContent">
+        <div class="bg-primary-600 text-white px-6 py-4 rounded-t-lg flex justify-between items-center">
+            <h3 class="text-lg font-semibold" id="modalTitle">Détails du fournisseur</h3>
+            <button id="closeModal" class="text-white hover:text-primary-200 transition-colors duration-150">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <div class="mb-4">
+                        <h4 class="text-sm font-medium text-secondary-500 mb-1">Nom du fournisseur</h4>
+                        <p class="text-secondary-900 font-semibold text-lg" id="modalSupplierName">-</p>
+                    </div>
+                    <div class="mb-4">
+                        <h4 class="text-sm font-medium text-secondary-500 mb-1">Personne à contacter</h4>
+                        <p class="text-secondary-700" id="modalSupplierContact">-</p>
+                    </div>
+                    <div class="mb-4">
+                        <h4 class="text-sm font-medium text-secondary-500 mb-1">Adresse</h4>
+                        <p class="text-secondary-700" id="modalSupplierAddress">-</p>
+                    </div>
+                </div>
+                <div>
+                    <div class="mb-4">
+                        <h4 class="text-sm font-medium text-secondary-500 mb-1">Email</h4>
+                        <p class="text-secondary-900" id="modalSupplierEmail">-</p>
+                    </div>
+                    <div class="mb-4">
+                        <h4 class="text-sm font-medium text-secondary-500 mb-1">Téléphone</h4>
+                        <p class="text-secondary-900" id="modalSupplierPhone">-</p>
+                    </div>
+                    <div class="mb-4">
+                        <h4 class="text-sm font-medium text-secondary-500 mb-1">Notes</h4>
+                        <p class="text-secondary-700" id="modalSupplierNotes">-</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="border-t border-secondary-200 pt-4 mt-4 flex justify-end space-x-3">
+                <button id="editSupplierBtn" class="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center gap-2">
+                    <i class="fas fa-edit"></i>
+                    <span>Modifier</span>
+                </button>
+                <button id="viewPurchasesBtn" class="bg-secondary-600 hover:bg-secondary-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center gap-2">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span>Voir les achats</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+       /* Enhanced animations */
+       @keyframes fade-in-up {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .animate-fade-in-up {
+        animation: fade-in-up 0.4s ease-out forwards;
+    }
+    
+    /* Enhanced table styles */
+    #suppliersTable {
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+    
+    #suppliersTable th {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    }
+    
+    #suppliersTable tr:hover {
+        box-shadow: 0 0 0 2px #e0f2fe;
+    }
+    
+    /* Modal animation */
+    @keyframes modal-in {
+        from {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+    
+    .modal-animate-in {
+        animation: modal-in 0.3s ease-out forwards;
+    }
+    
+    /* Shake animation for empty search results */
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+        20%, 40%, 60%, 80% { transform: translateX(5px); }
+    }
+    
+    .shake-animation {
+        animation: shake 0.6s cubic-bezier(.36,.07,.19,.97) both;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 640px) {
+        th, td {
+            @apply px-3 py-3;
+        }
+        
+        .hidden-xs {
+            display: none;
+        }
+    }
+    
+    /* Sort indicators */
+    .sort-asc::after {
+        content: "↑";
+        margin-left: 4px;
+        color: #0ea5e9;
+    }
+    
+    .sort-desc::after {
+        content: "↓";
+        margin-left: 4px;
+        color: #0ea5e9;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Search functionality
+    const searchInput = document.getElementById('supplierSearch');
+    const table = document.getElementById('suppliersTable');
+    
+    if (searchInput && table) {
+        searchInput.addEventListener('keyup', function() {
+            const searchTerm = this.value.toLowerCase();
+            const rows = table.querySelectorAll('tbody tr');
+            let hasResults = false;
+            
+            rows.forEach(row => {
+                const name = row.querySelector('td:first-child').textContent.toLowerCase();
+                const contact = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
+                const email = row.querySelector('td:nth-child(3)').textContent.toLowerCase();
+                const phone = row.querySelector('td:nth-child(4)').textContent.toLowerCase();
+                
+                if (name.includes(searchTerm) || contact.includes(searchTerm) || 
+                    email.includes(searchTerm) || phone.includes(searchTerm)) {
+                    row.style.display = '';
+                    hasResults = true;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+            
+            // Show empty state if no results
+            const emptyState = document.getElementById('emptySearchState');
+            if (!hasResults) {
+                if (!emptyState) {
+                    const tbody = table.querySelector('tbody');
+                    const emptyRow = document.createElement('tr');
+                    emptyRow.id = 'emptySearchState';
+                    emptyRow.innerHTML = `
+                        <td colspan="5" class="px-6 py-12 text-center">
+                            <div class="flex flex-col items-center">
+                                <div class="text-secondary-400 mb-2">
+                                    <i class="fas fa-search text-2xl"></i>
+                                </div>
+                                <p class="text-secondary-500">Aucun résultat pour "<span class="font-medium">${searchTerm}</span>"</p>
+                                <button id="clearSearch" class="mt-4 text-primary-600 hover:text-primary-800 font-medium flex items-center gap-1">
+                                    <i class="fas fa-times-circle"></i> Effacer la recherche
+                                </button>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(emptyRow);
+                    
+                    // Add clear search functionality
+                    document.getElementById('clearSearch').addEventListener('click', function() {
+                        searchInput.value = '';
+                        searchInput.dispatchEvent(new Event('keyup'));
+                        searchInput.focus();
+                    });
+                }
+            } else if (emptyState) {
+                emptyState.remove();
+            }
+        });
+    }
+    
+    // Sorting functionality
+    const sortableHeaders = document.querySelectorAll('[data-sort]');
+    let currentSort = { column: null, direction: 'asc' };
+    
+    sortableHeaders.forEach(header => {
+        header.addEventListener('click', function() {
+            const column = this.getAttribute('data-sort');
+            
+            // Update sort direction
+            if (currentSort.column === column) {
+                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.column = column;
+                currentSort.direction = 'asc';
+            }
+            
+            // Update sort indicators
+            sortableHeaders.forEach(h => {
+                h.classList.remove('sort-asc', 'sort-desc');
+            });
+            this.classList.add(currentSort.direction === 'asc' ? 'sort-asc' : 'sort-desc');
+            
+            // Sort rows
+            const tbody = table.querySelector('tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr:not(#emptySearchState)'));
+            
+            rows.sort((a, b) => {
+                let aValue, bValue;
+                
+                switch(column) {
+                    case 'name':
+                        aValue = a.querySelector('td:nth-child(1) .text-sm').textContent.trim().toLowerCase();
+                        bValue = b.querySelector('td:nth-child(1) .text-sm').textContent.trim().toLowerCase();
+                        break;
+                    case 'contact':
+                        aValue = a.querySelector('td:nth-child(2) .text-sm').textContent.trim().toLowerCase();
+                        bValue = b.querySelector('td:nth-child(2) .text-sm').textContent.trim().toLowerCase();
+                        break;
+                    case 'email':
+                        aValue = a.querySelector('td:nth-child(3)').textContent.trim().toLowerCase();
+                        bValue = b.querySelector('td:nth-child(3)').textContent.trim().toLowerCase();
+                        break;
+                    case 'phone':
+                        aValue = a.querySelector('td:nth-child(4)').textContent.trim().toLowerCase();
+                        bValue = b.querySelector('td:nth-child(4)').textContent.trim().toLowerCase();
+                        break;
+                    default:
+                        return 0;
+                }
+                
+                if (aValue === bValue) return 0;
+                
+                const comparison = aValue > bValue ? 1 : -1;
+                return currentSort.direction === 'asc' ? comparison : -comparison;
+            });
+            
+            // Re-append rows in new order
+            rows.forEach(row => tbody.appendChild(row));
+            
+            // Show sorting notification
+            showNotification(`Trié par ${getColumnName(column)} (${currentSort.direction === 'asc' ? 'croissant' : 'décroissant'})`, 'info');
+        });
+    });
+    
+    function getColumnName(column) {
+        switch(column) {
+            case 'name': return 'nom';
+            case 'contact': return 'contact';
+            case 'email': return 'email';
+            case 'phone': return 'téléphone';
+            default: return column;
+        }
+    }
+    
+    // Sort button functionality
+    const sortButton = document.getElementById('sortButton');
+    if (sortButton) {
+        sortButton.addEventListener('click', function() {
+            // Create sort dropdown
+            let sortDropdown = document.getElementById('sortDropdown');
+            
+            if (!sortDropdown) {
+                sortDropdown = document.createElement('div');
+                sortDropdown.id = 'sortDropdown';
+                sortDropdown.className = 'absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-secondary-200 z-10';
+                sortDropdown.innerHTML = `
+                    <div class="py-1">
+                        <button class="sort-option w-full text-left px-4 py-2 hover:bg-secondary-100" data-sort="name" data-direction="asc">
+                            <i class="fas fa-sort-alpha-down mr-2"></i> Nom (A-Z)
+                        </button>
+                        <button class="sort-option w-full text-left px-4 py-2 hover:bg-secondary-100" data-sort="name" data-direction="desc">
+                            <i class="fas fa-sort-alpha-up mr-2"></i> Nom (Z-A)
+                        </button>
+                        <button class="sort-option w-full text-left px-4 py-2 hover:bg-secondary-100" data-sort="email" data-direction="asc">
+                            <i class="fas fa-sort-alpha-down mr-2"></i> Email (A-Z)
+                        </button>
+                        <button class="sort-option w-full text-left px-4 py-2 hover:bg-secondary-100" data-sort="phone" data-direction="asc">
+                            <i class="fas fa-sort-numeric-down mr-2"></i> Téléphone
+                        </button>
+                    </div>
+                `;
+                
+                sortButton.parentNode.appendChild(sortDropdown);
+                
+                // Add event listeners to sort options
+                sortDropdown.querySelectorAll('.sort-option').forEach(option => {
+                    option.addEventListener('click', function() {
+                        const column = this.getAttribute('data-sort');
+                        const direction = this.getAttribute('data-direction');
+                        
+                        // Find and click the corresponding header
+                        const header = document.querySelector(`[data-sort="${column}"]`);
+                        if (header) {
+                            // Set current sort to match desired direction
+                            currentSort.column = column;
+                            currentSort.direction = direction === 'asc' ? 'desc' : 'asc'; // Toggle because click will toggle it again
+                            
+                            header.click();
+                        }
+                        
+                        sortDropdown.remove();
+                    });
+                });
+                
+                // Close dropdown when clicking outside
+                document.addEventListener('click', function(event) {
+                    if (!sortButton.contains(event.target) && !sortDropdown.contains(event.target)) {
+                        sortDropdown.remove();
+                    }
+                });
+            } else {
+                sortDropdown.remove();
+            }
+        });
+    }
+    
+    // Supplier details modal functionality
+    const modal = document.getElementById('supplierDetailsModal');
+    const modalContent = document.getElementById('modalContent');
+    const closeModal = document.getElementById('closeModal');
+    const viewDetailsBtns = document.querySelectorAll('.view-details-btn');
+    const editSupplierBtn = document.getElementById('editSupplierBtn');
+    const viewPurchasesBtn = document.getElementById('viewPurchasesBtn');
+    
+    // Open modal
+    viewDetailsBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const supplierId = this.getAttribute('data-id');
+            const supplierName = this.getAttribute('data-name');
+            
+            // Set modal content
+            document.getElementById('modalTitle').textContent = `Détails du fournisseur: ${supplierName}`;
+            document.getElementById('modalSupplierName').textContent = supplierName;
+            
+            // Get supplier details from the table row
+            const row = this.closest('tr');
+            const contact = row.querySelector('td:nth-child(2) .text-sm').textContent.trim();
+            const address = row.querySelector('td:nth-child(2) .text-xs').textContent.trim();
+            const email = row.querySelector('td:nth-child(3)').textContent.trim();
+            const phone = row.querySelector('td:nth-child(4)').textContent.trim();
+            
+            document.getElementById('modalSupplierContact').textContent = contact || '-';
+            document.getElementById('modalSupplierAddress').textContent = address || '-';
+            document.getElementById('modalSupplierEmail').textContent = email || '-';
+            document.getElementById('modalSupplierPhone').textContent = phone || '-';
+            document.getElementById('modalSupplierNotes').textContent = 'Aucune note disponible';
+            
+            // Set edit button link
+            editSupplierBtn.setAttribute('data-id', supplierId);
+            editSupplierBtn.onclick = function() {
+                window.location.href = `/suppliers/${this.getAttribute('data-id')}/edit/`;
+            };
+            
+            // Set view purchases button action
+            viewPurchasesBtn.setAttribute('data-id', supplierId);
+            viewPurchasesBtn.onclick = function() {
+                // This would typically redirect to a filtered purchases page
+                showNotification('Fonctionnalité à implémenter: voir les achats du fournisseur', 'info');
+            };
+            
+            // Show modal with animation
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modalContent.classList.remove('scale-95', 'opacity-0');
+                modalContent.classList.add('modal-animate-in');
+            }, 10);
+        });
+    });
+    
+    // Close modal
+    if (closeModal) {
+        closeModal.addEventListener('click', closeModalFunction);
+    }
+    
+    // Close modal when clicking outside
+    if (modal) {
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                closeModalFunction();
+            }
+        });
+    }
+    
+    function closeModalFunction() {
+        modalContent.classList.add('scale-95', 'opacity-0');
+        modalContent.classList.remove('modal-animate-in');
+        setTimeout(() => {
+            modal.classList.add('hidden');
+        }, 300);
+    }
+    
+    // Notification helper
+    function showNotification(message, type = 'info') {
+        // Check if notification container exists, create if not
+        let notificationContainer = document.getElementById('notificationContainer');
+        if (!notificationContainer) {
+            notificationContainer = document.createElement('div');
+            notificationContainer.id = 'notificationContainer';
+            notificationContainer.className = 'fixed bottom-4 right-4 z-50 flex flex-col gap-2';
+            document.body.appendChild(notificationContainer);
+        }
+        
+               // Create notification with appropriate styling based on type
+               const notification = document.createElement('div');
+               let bgColor, textColor, icon;
+               
+               switch(type) {
+                   case 'success':
+                       bgColor = 'bg-green-100 border-l-4 border-green-500';
+                       textColor = 'text-green-800';
+                       icon = 'fa-check-circle';
+                       break;
+                   case 'error':
+                       bgColor = 'bg-red-100 border-l-4 border-red-500';
+                       textColor = 'text-red-800';
+                       icon = 'fa-exclamation-circle';
+                       break;
+                   case 'warning':
+                       bgColor = 'bg-yellow-100 border-l-4 border-yellow-500';
+                       textColor = 'text-yellow-800';
+                       icon = 'fa-exclamation-triangle';
+                       break;
+                   default: // info
+                       bgColor = 'bg-blue-100 border-l-4 border-blue-500';
+                       textColor = 'text-blue-800';
+                       icon = 'fa-info-circle';
+               }
+               
+               notification.className = `${bgColor} ${textColor} px-4 py-3 rounded-lg shadow-lg mb-2 transform transition-all duration-300 translate-y-2 opacity-0 flex items-center max-w-md`;
+               notification.innerHTML = `
+                   <i class="fas ${icon} mr-2 text-lg"></i>
+                   <div class="flex-1">${message}</div>
+                   <button class="ml-2 text-secondary-400 hover:text-secondary-600 focus:outline-none">
+                       <i class="fas fa-times"></i>
+                   </button>
+               `;
+               
+               notificationContainer.appendChild(notification);
+               
+               // Animate in
+               setTimeout(() => {
+                   notification.classList.remove('translate-y-2', 'opacity-0');
+               }, 10);
+               
+               // Add close button functionality
+               const closeBtn = notification.querySelector('button');
+               closeBtn.addEventListener('click', () => {
+                   notification.classList.add('translate-y-2', 'opacity-0');
+                   setTimeout(() => {
+                       notification.remove();
+                   }, 300);
+               });
+               
+               // Auto-remove after 5 seconds
+               setTimeout(() => {
+                   if (notification.parentNode) {
+                       notification.classList.add('translate-y-2', 'opacity-0');
+                       setTimeout(() => {
+                           if (notification.parentNode) {
+                               notification.remove();
+                           }
+                       }, 300);
+                   }
+               }, 5000);
+           }
+           
+           // Row hover effects with enhanced interactivity
+           const tableRows = document.querySelectorAll('tbody tr');
+           tableRows.forEach(row => {
+               row.addEventListener('mouseenter', () => {
+                   row.classList.add('shadow-md');
+                   row.style.borderLeft = '3px solid #0ea5e9';
+                   row.style.paddingLeft = '3px';
+               });
+               
+               row.addEventListener('mouseleave', () => {
+                   row.classList.remove('shadow-md');
+                   row.style.borderLeft = '';
+                   row.style.paddingLeft = '';
+               });
+           });
+           
+           // Add keyboard navigation for accessibility
+           document.addEventListener('keydown', function(e) {
+               // Escape key closes modal
+               if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+                   closeModalFunction();
+               }
+               
+               // Ctrl+F focuses search input
+               if (e.ctrlKey && e.key === 'f') {
+                   e.preventDefault();
+                   searchInput.focus();
+               }
+           });
+       });
+       </script>
+{% endblock %}
+       

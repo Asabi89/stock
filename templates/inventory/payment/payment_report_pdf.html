@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Rapport des Paiements</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.5;
+            color: #333;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            color: #0284c7;
+            margin-bottom: 5px;
+        }
+        .header p {
+            color: #666;
+            margin: 0;
+        }
+        .summary {
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #f8fafc;
+            border-radius: 5px;
+        }
+        .summary-item {
+            display: inline-block;
+            margin-right: 30px;
+        }
+        .summary-label {
+            font-weight: bold;
+            color: #666;
+        }
+        .summary-value {
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .summary-value.received {
+            color: #16a34a;
+        }
+        .summary-value.paid {
+            color: #dc2626;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f1f5f9;
+            font-weight: bold;
+            color: #475569;
+        }
+        tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
+        .client {
+            color: #16a34a;
+        }
+        .supplier {
+            color: #dc2626;
+        }
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 10px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Rapport des Paiements</h1>
+        <p>Généré le {{ today|date:"d/m/Y à H:i" }}</p>
+    </div>
+    
+    <div class="summary">
+        <div class="summary-item">
+            <div class="summary-label">Total des paiements reçus:</div>
+            <div class="summary-value received">{{ total_received|floatformat:2 }} FCFA</div>
+        </div>
+        <div class="summary-item">
+            <div class="summary-label">Total des paiements effectués:</div>
+            <div class="summary-value paid">{{ total_paid|floatformat:2 }} FCFA</div>
+        </div>
+        <div class="summary-item">
+            <div class="summary-label">Solde:</div>
+            <div class="summary-value {% if total_received > total_paid %}received{% else %}paid{% endif %}">
+                {{ total_received|add:"-"|add:total_paid|floatformat:2 }} FCFA
+            </div>
+        </div>
+    </div>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Méthode</th>
+                <th>Montant</th>
+                <th>Référence</th>
+                <th>Notes</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for payment in payments %}
+            <tr>
+                <td>{{ payment.payment_date|date:"d/m/Y H:i" }}</td>
+                <td class="{% if payment.payment_type == 'client' %}client{% else %}supplier{% endif %}">
+                    {{ payment.get_payment_type_display }}
+                </td>
+                <td>{{ payment.get_payment_method_display }}</td>
+                <td>{{ payment.amount|floatformat:2 }} FCFA</td>
+                <td>
+                    {% if payment.sale %}
+                        Vente #{{ payment.sale.id }}
+                    {% elif payment.purchase %}
+                        Achat #{{ payment.purchase.id }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td>{{ payment.notes|default:"-" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <div class="footer">
+        <p>Ce rapport a été généré automatiquement par le système de gestion de stock.</p>
+    </div>
+</body>
+</html>

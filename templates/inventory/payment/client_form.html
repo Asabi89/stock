@@ -1,0 +1,359 @@
+{% extends "base.html" %}
+
+{% block title %}Nouveau Paiement Client - Gestion de Stock{% endblock %}
+
+{% block header_title %}Nouveau Paiement Client{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in-up">
+    <!-- Header -->
+    <div class="mb-6">
+        <h2 class="text-xl md:text-2xl font-bold text-secondary-800 flex items-center">
+            <i class="fas fa-money-bill-wave text-primary-600 mr-3"></i>
+            <span>Enregistrer un paiement client</span>
+        </h2>
+        <p class="text-sm text-secondary-500 mt-1">Enregistrez un paiement reçu d'un client</p>
+    </div>
+
+    <!-- Form Card -->
+    <div class="bg-white rounded-lg shadow-lg overflow-hidden border border-secondary-200 max-w-3xl">
+        <div class="bg-primary-50 px-6 py-4 border-b border-secondary-200">
+            <h3 class="text-lg font-medium text-primary-800">Informations du paiement</h3>
+        </div>
+        
+        <form method="post" class="p-6">
+            {% csrf_token %}
+            
+            {% if form.errors %}
+                <div class="mb-6 bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded">
+                    <p class="font-medium">Veuillez corriger les erreurs suivantes :</p>
+                    <ul class="list-disc ml-5 mt-2">
+                        {% for field in form %}
+                            {% for error in field.errors %}
+                                <li>{{ field.label }}: {{ error }}</li>
+                            {% endfor %}
+                        {% endfor %}
+                        {% for error in form.non_field_errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Vente associée -->
+                <div class="col-span-1 md:col-span-2">
+                    <label for="{{ form.sale.id_for_label }}" class="block text-sm font-medium text-secondary-700 mb-1">
+                        {{ form.sale.label }} <span class="text-red-600">*</span>
+                    </label>
+                    {{ form.sale }}
+                    {% if form.sale.help_text %}
+                        <p class="mt-1 text-xs text-secondary-500">{{ form.sale.help_text }}</p>
+                    {% endif %}
+                </div>
+                
+                <!-- Méthode de paiement -->
+                <div>
+                    <label for="{{ form.payment_method.id_for_label }}" class="block text-sm font-medium text-secondary-700 mb-1">
+                        {{ form.payment_method.label }} <span class="text-red-600">*</span>
+                    </label>
+                    {{ form.payment_method }}
+                    {% if form.payment_method.help_text %}
+                        <p class="mt-1 text-xs text-secondary-500">{{ form.payment_method.help_text }}</p>
+                    {% endif %}
+                </div>
+                
+                <!-- Montant -->
+                <div>
+                    <label for="{{ form.amount.id_for_label }}" class="block text-sm font-medium text-secondary-700 mb-1">
+                        {{ form.amount.label }} <span class="text-red-600">*</span>
+                    </label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <span class="text-secondary-500 sm:text-sm">FCFA</span>
+                        </div>
+                        {{ form.amount }}
+                    </div>
+                    {% if form.amount.help_text %}
+                        <p class="mt-1 text-xs text-secondary-500">{{ form.amount.help_text }}</p>
+                    {% endif %}
+                </div>
+                
+                <!-- Date de paiement -->
+                <div>
+                    <label for="{{ form.payment_date.id_for_label }}" class="block text-sm font-medium text-secondary-700 mb-1">
+                        {{ form.payment_date.label }} <span class="text-red-600">*</span>
+                    </label>
+                    {{ form.payment_date }}
+                    {% if form.payment_date.help_text %}
+                        <p class="mt-1 text-xs text-secondary-500">{{ form.payment_date.help_text }}</p>
+                    {% endif %}
+                </div>
+                
+                <!-- Notes -->
+                <div class="col-span-1 md:col-span-2">
+                    <label for="{{ form.notes.id_for_label }}" class="block text-sm font-medium text-secondary-700 mb-1">
+                        {{ form.notes.label }}
+                    </label>
+                    {{ form.notes }}
+                    {% if form.notes.help_text %}
+                        <p class="mt-1 text-xs text-secondary-500">{{ form.notes.help_text }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Summary Card -->
+            <div class="mt-6 bg-secondary-50 p-4 rounded-lg border border-secondary-200">
+                <h4 class="font-medium text-secondary-800 mb-2">Résumé du paiement</h4>
+                <div id="paymentSummary" class="text-sm text-secondary-700">
+                    <p>Sélectionnez une vente pour voir les détails</p>
+                </div>
+            </div>
+            
+            <!-- Form Actions -->
+            <div class="mt-6 flex justify-end space-x-3 border-t border-secondary-200 pt-6">
+                <a href="{% url 'payment_list' %}" class="px-4 py-2 bg-secondary-200 text-secondary-800 rounded-lg font-medium hover:bg-secondary-300 focus:outline-none focus:ring-2 focus:ring-secondary-400 focus:ring-offset-2 transition-all duration-200">
+                    Annuler
+                </a>
+                <button type="submit" class="px-4 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-all duration-200 flex items-center gap-2">
+                    <i class="fas fa-save"></i>
+                    <span>Enregistrer</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Enhanced animations */
+    @keyframes fade-in-up {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .animate-fade-in-up {
+        animation: fade-in-up 0.4s ease-out forwards;
+    }
+    
+    /* Form styling */
+    input[type="text"],
+    input[type="number"],
+    input[type="datetime-local"],
+    select,
+    textarea {
+        @apply w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 block shadow-sm sm:text-sm border-secondary-300;
+    }
+    
+    input[type="number"] {
+        @apply pl-14;
+    }
+    
+    textarea {
+        @apply h-24;
+    }
+    
+    /* Highlight required fields */
+    .required-field label::after {
+        content: " *";
+        color: #ef4444;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const saleSelect = document.getElementById('id_sale');
+    const amountInput = document.getElementById('id_amount');
+    const paymentSummary = document.getElementById('paymentSummary');
+    
+    // Function to update payment summary
+    function updatePaymentSummary() {
+        if (saleSelect.value) {
+            // In a real application, you would fetch sale details from the server
+            // For this example, we'll use the selected option's text
+            const selectedOption = saleSelect.options[saleSelect.selectedIndex];
+            const saleId = selectedOption.value;
+            const saleText = selectedOption.text;
+            
+            // Make an AJAX request to get sale details
+            fetch(`/api/sales/${saleId}/`)
+                .then(response => response.json())
+                .then(sale => {
+                    paymentSummary.innerHTML = `
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <p class="font-medium">Vente:</p>
+                                <p>#${sale.id} - ${sale.client_name || 'Client occasionnel'}</p>
+                            </div>
+                            <div>
+                                <p class="font-medium">Date de vente:</p>
+                                <p>${new Date(sale.sale_date).toLocaleDateString()}</p>
+                            </div>
+                            <div>
+                                <p class="font-medium">Montant total:</p>
+                                <p>${sale.total_amount} FCFA</p>
+                            </div>
+                            <div>
+                                <p class="font-medium">Déjà payé:</p>
+                                <p>${sale.paid_amount} FCFA</p>
+                            </div>
+                            <div class="col-span-2">
+                                <p class="font-medium">Reste à payer:</p>
+                                <p class="text-red-600 font-bold">${sale.total_amount - sale.paid_amount} FCFA</p>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Set default amount to remaining balance
+                    if (!amountInput.value) {
+                        amountInput.value = (sale.total_amount - sale.paid_amount).toFixed(2);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching sale details:', error);
+                    paymentSummary.innerHTML = `<p>Erreur lors de la récupération des détails de la vente</p>`;
+                });
+        } else {
+            paymentSummary.innerHTML = `<p>Sélectionnez une vente pour voir les détails</p>`;
+        }
+    }
+    
+    // Update summary when sale selection changes
+    if (saleSelect) {
+        saleSelect.addEventListener('change', updatePaymentSummary);
+        
+        // Initialize summary if a sale is already selected
+        if (saleSelect.value) {
+            updatePaymentSummary();
+        }
+    }
+    
+    // Form validation
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(e) {
+        let isValid = true;
+        
+        // Validate sale
+        if (!saleSelect.value) {
+            isValid = false;
+            saleSelect.classList.add('border-red-500', 'ring-1', 'ring-red-500');
+        } else {
+            saleSelect.classList.remove('border-red-500', 'ring-1', 'ring-red-500');
+        }
+        
+                // Validate amount
+                if (!amountInput.value || parseFloat(amountInput.value) <= 0) {
+                    isValid = false;
+                    amountInput.classList.add('border-red-500', 'ring-1', 'ring-red-500');
+                } else {
+                    amountInput.classList.remove('border-red-500', 'ring-1', 'ring-red-500');
+                }
+                
+                // Prevent form submission if validation fails
+                if (!isValid) {
+                    e.preventDefault();
+                    showNotification('Veuillez corriger les erreurs dans le formulaire', 'error');
+                }
+            });
+            
+            // Notification helper
+            function showNotification(message, type = 'info') {
+                // Check if notification container exists, create if not
+                let notificationContainer = document.getElementById('notificationContainer');
+                if (!notificationContainer) {
+                    notificationContainer = document.createElement('div');
+                    notificationContainer.id = 'notificationContainer';
+                    notificationContainer.className = 'fixed bottom-4 right-4 z-50 flex flex-col gap-2';
+                    document.body.appendChild(notificationContainer);
+                }
+                
+                // Create notification with appropriate styling based on type
+                const notification = document.createElement('div');
+                let bgColor, textColor, icon;
+                
+                switch(type) {
+                    case 'success':
+                        bgColor = 'bg-green-100 border-l-4 border-green-500';
+                        textColor = 'text-green-800';
+                        icon = 'fa-check-circle';
+                        break;
+                    case 'error':
+                        bgColor = 'bg-red-100 border-l-4 border-red-500';
+                        textColor = 'text-red-800';
+                        icon = 'fa-exclamation-circle';
+                        break;
+                    case 'warning':
+                        bgColor = 'bg-yellow-100 border-l-4 border-yellow-500';
+                        textColor = 'text-yellow-800';
+                        icon = 'fa-exclamation-triangle';
+                        break;
+                    default: // info
+                        bgColor = 'bg-blue-100 border-l-4 border-blue-500';
+                        textColor = 'text-blue-800';
+                        icon = 'fa-info-circle';
+                }
+                
+                notification.className = `${bgColor} ${textColor} px-4 py-3 rounded-lg shadow-lg mb-2 transform transition-all duration-300 translate-y-2 opacity-0 flex items-center max-w-md`;
+                notification.innerHTML = `
+                    <i class="fas ${icon} mr-2 text-lg"></i>
+                    <div class="flex-1">${message}</div>
+                    <button class="ml-2 text-secondary-400 hover:text-secondary-600 focus:outline-none">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+                
+                notificationContainer.appendChild(notification);
+                
+                // Animate in
+                setTimeout(() => {
+                    notification.classList.remove('translate-y-2', 'opacity-0');
+                }, 10);
+                
+                // Add close button functionality
+                const closeBtn = notification.querySelector('button');
+                closeBtn.addEventListener('click', () => {
+                    notification.classList.add('translate-y-2', 'opacity-0');
+                    setTimeout(() => {
+                        notification.remove();
+                    }, 300);
+                });
+                
+                // Auto-remove after 5 seconds
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.classList.add('translate-y-2', 'opacity-0');
+                        setTimeout(() => {
+                            if (notification.parentNode) {
+                                notification.remove();
+                            }
+                        }, 300);
+                    }
+                }, 5000);
+            }
+            
+            // Handle URL parameters (for pre-selecting a sale)
+            const urlParams = new URLSearchParams(window.location.search);
+            const saleId = urlParams.get('sale');
+            if (saleId && saleSelect) {
+                // Find and select the option with the matching sale ID
+                for (let i = 0; i < saleSelect.options.length; i++) {
+                    if (saleSelect.options[i].value === saleId) {
+                        saleSelect.selectedIndex = i;
+                        updatePaymentSummary();
+                        break;
+                    }
+                }
+            }
+        });
+        </script>
+        {% endblock %}
+        

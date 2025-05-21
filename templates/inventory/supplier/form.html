@@ -1,0 +1,297 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {% if supplier %}Modifier{% else %}Ajouter{% endif %} un fournisseur - Gestion de Stock
+{% endblock %}
+
+{% block header_title %}
+    {% if supplier %}Modifier{% else %}Ajouter{% endif %} un fournisseur
+{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in-up">
+    <!-- Header -->
+    <div class="mb-6">
+        <h2 class="text-xl md:text-2xl font-bold text-secondary-800 flex items-center">
+            <i class="fas {% if supplier %}fa-edit{% else %}fa-plus-circle{% endif %} text-primary-600 mr-3"></i>
+            <span>{% if supplier %}Modifier{% else %}Ajouter{% endif %} un fournisseur</span>
+        </h2>
+        <p class="text-sm text-secondary-500 mt-1">
+            {% if supplier %}
+                Modifiez les informations du fournisseur {{ supplier.name }}
+            {% else %}
+                Remplissez le formulaire pour ajouter un nouveau fournisseur
+            {% endif %}
+        </p>
+    </div>
+    
+    <!-- Form Card -->
+    <div class="bg-white rounded-lg shadow-lg overflow-hidden border border-secondary-200">
+        <div class="bg-secondary-50 px-6 py-4 border-b border-secondary-200">
+            <h3 class="font-medium text-secondary-800">Informations du fournisseur</h3>
+        </div>
+        
+        <form method="post" class="p-6">
+            {% csrf_token %}
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Left Column -->
+                <div>
+                    <div class="mb-4">
+                        <label for="{{ form.name.id_for_label }}" class="block text-sm font-medium text-secondary-700 mb-1">
+                            Nom du fournisseur <span class="text-red-600">*</span>
+                        </label>
+                        {{ form.name }}
+                        {% if form.name.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.name.errors.0 }}</p>
+                        {% endif %}
+                        <p class="mt-1 text-xs text-secondary-500">Le nom complet de l'entreprise fournisseur</p>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="{{ form.contact_name.id_for_label }}" class="block text-sm font-medium text-secondary-700 mb-1">
+                            Personne à contacter
+                        </label>
+                        {{ form.contact_name }}
+                        {% if form.contact_name.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.contact_name.errors.0 }}</p>
+                        {% endif %}
+                        <p class="mt-1 text-xs text-secondary-500">Nom de la personne à contacter chez ce fournisseur</p>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="{{ form.email.id_for_label }}" class="block text-sm font-medium text-secondary-700 mb-1">
+                            Email
+                        </label>
+                        {{ form.email }}
+                        {% if form.email.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.email.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Right Column -->
+                <div>
+                    <div class="mb-4">
+                        <label for="{{ form.phone.id_for_label }}" class="block text-sm font-medium text-secondary-700 mb-1">
+                            Téléphone
+                        </label>
+                        {{ form.phone }}
+                        {% if form.phone.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.phone.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="{{ form.address.id_for_label }}" class="block text-sm font-medium text-secondary-700 mb-1">
+                            Adresse
+                        </label>
+                        {{ form.address }}
+                        {% if form.address.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.address.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="{{ form.notes.id_for_label }}" class="block text-sm font-medium text-secondary-700 mb-1">
+                            Notes
+                        </label>
+                        {{ form.notes }}
+                        {% if form.notes.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.notes.errors.0 }}</p>
+                        {% endif %}
+                        <p class="mt-1 text-xs text-secondary-500">Informations supplémentaires sur ce fournisseur</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Form Actions -->
+            <div class="border-t border-secondary-200 mt-6 pt-6 flex justify-between">
+                <a href="{% url 'supplier_list' %}" class="px-4 py-2 bg-secondary-200 text-secondary-800 rounded-lg font-medium hover:bg-secondary-300 focus:outline-none focus:ring-2 focus:ring-secondary-400 focus:ring-offset-2 flex items-center gap-2 transition-all duration-200">
+                    <i class="fas fa-arrow-left"></i>
+                    <span>Retour</span>
+                </a>
+                <button type="submit" class="px-6 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 flex items-center gap-2 transition-all duration-200 transform hover:scale-105">
+                    <i class="fas {% if supplier %}fa-save{% else %}fa-plus-circle{% endif %}"></i>
+                    <span>{% if supplier %}Enregistrer{% else %}Ajouter{% endif %}</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Form styling */
+    input[type="text"],
+    input[type="email"],
+    input[type="tel"],
+    textarea {
+        @apply w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 block shadow-sm sm:text-sm border-secondary-300;
+    }
+    
+    textarea {
+        min-height: 100px;
+    }
+    
+    /* Animation */
+    @keyframes fade-in-up {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .animate-fade-in-up {
+        animation: fade-in-up 0.4s ease-out forwards;
+    }
+    
+    /* Required field indicator */
+    .text-red-600 {
+        color: #dc2626;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Focus first input on page load
+    const firstInput = document.querySelector('form input:not([type="hidden"])');
+    if (firstInput) {
+        firstInput.focus();
+    }
+    
+    // Form validation
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(e) {
+        let isValid = true;
+        
+        // Check required fields
+        const nameInput = document.getElementById('{{ form.name.id_for_label }}');
+        if (!nameInput.value.trim()) {
+            isValid = false;
+            nameInput.classList.add('border-red-500', 'ring-1', 'ring-red-500');
+            
+            // Add error message if not exists
+            let errorMsg = nameInput.parentNode.querySelector('.text-red-600');
+            if (!errorMsg) {
+                errorMsg = document.createElement('p');
+                errorMsg.className = 'mt-1 text-sm text-red-600';
+                errorMsg.textContent = 'Ce champ est obligatoire.';
+                nameInput.parentNode.insertBefore(errorMsg, nameInput.nextSibling);
+            }
+        } else {
+            nameInput.classList.remove('border-red-500', 'ring-1', 'ring-red-500');
+            const errorMsg = nameInput.parentNode.querySelector('.text-red-600');
+            if (errorMsg) {
+                errorMsg.remove();
+            }
+        }
+        
+        // Validate email format if provided
+        const emailInput = document.getElementById('{{ form.email.id_for_label }}');
+        if (emailInput.value.trim() && !isValidEmail(emailInput.value.trim())) {
+            isValid = false;
+            emailInput.classList.add('border-red-500', 'ring-1', 'ring-red-500');
+            
+            // Add error message if not exists
+            let errorMsg = emailInput.parentNode.querySelector('.text-red-600');
+            if (!errorMsg) {
+                errorMsg = document.createElement('p');
+                errorMsg.className = 'mt-1 text-sm text-red-600';
+                errorMsg.textContent = 'Veuillez entrer une adresse email valide.';
+                emailInput.parentNode.insertBefore(errorMsg, emailInput.nextSibling);
+            }
+        } else {
+            emailInput.classList.remove('border-red-500', 'ring-1', 'ring-red-500');
+            const errorMsg = emailInput.parentNode.querySelector('.text-red-600');
+            if (errorMsg) {
+                errorMsg.remove();
+            }
+        }
+        
+        if (!isValid) {
+            e.preventDefault();
+            
+            // Scroll to first error
+            const firstError = document.querySelector('.border-red-500');
+            if (firstError) {
+                firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                firstError.focus();
+            }
+        }
+    });
+    
+    // Email validation helper
+    function isValidEmail(email) {
+        const re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+        return re.test(email);
+    }
+    
+    // Clear validation styling on input
+    const inputs = document.querySelectorAll('input, textarea');
+    inputs.forEach(input => {
+        input.addEventListener('input', function() {
+            this.classList.remove('border-red-500', 'ring-1', 'ring-red-500');
+            const errorMsg = this.parentNode.querySelector('.text-red-600');
+            if (errorMsg && !errorMsg.classList.contains('required-indicator')) {
+                errorMsg.remove();
+            }
+        });
+    });
+    
+    // Add character counter for text areas
+    const textareas = document.querySelectorAll('textarea');
+    textareas.forEach(textarea => {
+        // Create counter element
+        const counter = document.createElement('div');
+        counter.className = 'text-xs text-secondary-500 text-right mt-1';
+        counter.textContent = `0/${textarea.maxLength || 500} caractères`;
+        textarea.parentNode.appendChild(counter);
+        
+        // Update counter on input
+        textarea.addEventListener('input', function() {
+            const maxLength = this.maxLength || 500;
+            const currentLength = this.value.length;
+            counter.textContent = `${currentLength}/${maxLength} caractères`;
+            
+            // Change color when approaching limit
+            if (currentLength > maxLength * 0.9) {
+                counter.classList.add('text-yellow-600');
+            } else {
+                counter.classList.remove('text-yellow-600');
+            }
+        });
+    });
+    
+    // Confirm before leaving with unsaved changes
+    let formChanged = false;
+    
+    inputs.forEach(input => {
+        input.addEventListener('change', function() {
+            formChanged = true;
+        });
+    });
+    
+    window.addEventListener('beforeunload', function(e) {
+        if (formChanged) {
+            e.preventDefault();
+            e.returnValue = 'Vous avez des modifications non enregistrées. Êtes-vous sûr de vouloir quitter cette page?';
+            return e.returnValue;
+        }
+    });
+    
+    // Disable confirmation when submitting form
+    form.addEventListener('submit', function() {
+        formChanged = false;
+    });
+});
+</script>
+{% endblock %}
+

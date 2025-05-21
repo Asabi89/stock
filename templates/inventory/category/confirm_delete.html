@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+
+{% block title %}Supprimer Catégorie - Gestion de Stock{% endblock %}
+{% block header_title %}Supprimer Catégorie{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto animate-fade-in-up">
+    <!-- Breadcrumb -->
+    <nav class="mb-6 text-sm bg-white p-3 rounded-lg shadow-sm border border-secondary-200" aria-label="Breadcrumb">
+        <ol class="flex items-center space-x-2">
+            <li>
+                <a href="{% url 'dashboard' %}" class="text-secondary-500 hover:text-secondary-700 transition-colors duration-150 flex items-center">
+                    <i class="fas fa-home"></i>
+                    <span class="ml-1 hidden sm:inline">Accueil</span>
+                </a>
+            </li>
+            <li class="flex items-center">
+                <i class="fas fa-chevron-right text-secondary-400 text-xs mx-1"></i>
+                <a href="{% url 'category_list' %}" class="text-secondary-500 hover:text-secondary-700 transition-colors duration-150 flex items-center">
+                    <i class="fas fa-tags sm:hidden"></i>
+                    <i class="fas fa-tags sm:hidden"></i>
+                    <span class="sm:inline">Catégories</span>
+                </a>
+            </li>
+            <li class="flex items-center">
+                <i class="fas fa-chevron-right text-secondary-400 text-xs mx-1"></i>
+                <span class="text-red-600 font-medium" aria-current="page">
+                    Supprimer catégorie
+                </span>
+            </li>
+        </ol>
+    </nav>
+
+    <!-- Delete Confirmation Card -->
+    <div class="bg-white rounded-lg shadow-lg overflow-hidden border border-red-200">
+        <div class="bg-gradient-to-r from-red-600 to-red-700 px-6 py-4 flex items-center">
+            <div class="bg-white bg-opacity-20 p-3 rounded-lg mr-3">
+                <i class="fas fa-exclamation-triangle text-white text-xl"></i>
+            </div>
+            <h2 class="text-lg font-semibold text-white">
+                Confirmation de suppression
+            </h2>
+        </div>
+        
+        <div class="p-6">
+            <div class="bg-red-50 p-4 rounded-lg border border-red-200 mb-6">
+                <div class="flex items-start">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-exclamation-circle text-red-600 text-lg"></i>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-sm font-medium text-red-800">
+                            Attention: Cette action est irréversible!
+                        </h3>
+                        <div class="mt-2 text-sm text-red-700">
+                            <p>
+                                Vous êtes sur le point de supprimer définitivement la catégorie 
+                                <strong>"{{ category.name }}"</strong>.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mb-6">
+                <h3 class="text-lg font-medium text-secondary-900 mb-2">Détails de la catégorie</h3>
+                <div class="bg-secondary-50 p-4 rounded-lg border border-secondary-200">
+                    <div class="grid grid-cols-1 gap-4">
+                        <div>
+                            <span class="text-sm font-medium text-secondary-500">Nom:</span>
+                            <p class="text-secondary-900 font-semibold">{{ category.name }}</p>
+                        </div>
+                        <div>
+                            <span class="text-sm font-medium text-secondary-500">Description:</span>
+                            <p class="text-secondary-700">{{ category.description|default:"Aucune description" }}</p>
+                        </div>
+                        <div>
+                            <span class="text-sm font-medium text-secondary-500">Produits associés:</span>
+                            <p class="text-secondary-900">
+                                <span class="px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full bg-primary-100 text-primary-800 border border-primary-200">
+                                    {{ category.product_set.count }} produits
+                                </span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            {% if category.product_set.count > 0 %}
+                <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200 mb-6">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-info-circle text-yellow-600 text-lg"></i>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-sm font-medium text-yellow-800">
+                                Cette catégorie contient des produits!
+                            </h3>
+                            <div class="mt-2 text-sm text-yellow-700">
+                                <p>
+                                    La suppression de cette catégorie affectera {{ category.product_set.count }} produit(s).
+                                    Ces produits n'auront plus de catégorie assignée.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+            
+            <form method="post" id="deleteForm">
+                {% csrf_token %}
+                
+                <div class="flex items-center justify-between space-x-3 pt-4 border-t border-secondary-200">
+                    <a href="{% url 'category_list' %}" class="btn-secondary flex items-center gap-2 transition-all duration-200 transform hover:scale-105">
+                        <i class="fas fa-arrow-left mr-1"></i> Annuler
+                    </a>
+                    <button type="submit" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center gap-2 shadow-md hover:shadow-lg" id="confirmDeleteBtn">
+                        <i class="fas fa-trash-alt mr-1"></i> Confirmer la suppression
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Enhanced animations */
+    @keyframes fade-in-up {
+        from { 
+            opacity: 0; 
+            transform: translateY(20px); 
+        }
+        to { 
+            opacity: 1; 
+            transform: translateY(0); 
+        }
+    }
+    
+    .animate-fade-in-up {
+        animation: fade-in-up 0.4s ease-out forwards;
+    }
+    
+    /* Button styles */
+    .btn-primary {
+        @apply bg-primary-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2;
+    }
+    
+    .btn-secondary {
+        @apply bg-secondary-200 text-secondary-800 px-4 py-2 rounded-lg font-medium hover:bg-secondary-300 focus:outline-none focus:ring-2 focus:ring-secondary-400 focus:ring-offset-2;
+    }
+    
+    /* Pulse animation for warning */
+    @keyframes pulse-border {
+        0%, 100% { border-color: rgba(220, 38, 38, 0.5); }
+        50% { border-color: rgba(220, 38, 38, 1); }
+    }
+    
+    .pulse-animation {
+        animation: pulse-border 2s infinite;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 640px) {
+        .btn-primary, .btn-secondary {
+            @apply py-2 px-3 text-sm;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Form submission with confirmation
+    const form = document.getElementById('deleteForm');
+    const confirmBtn = document.getElementById('confirmDeleteBtn');
+    
+    if (form && confirmBtn) {
+        // Add loading state to submit button
+        form.addEventListener('submit', function(e) {
+            // Double confirmation for categories with products
+            {% if category.product_set.count > 0 %}
+            if (!confirm('Cette catégorie contient {{ category.product_set.count }} produit(s). Êtes-vous sûr de vouloir la supprimer?')) {
+                e.preventDefault();
+                return false;
+            }
+            {% endif %}
+            
+            // Show loading state
+            confirmBtn.disabled = true;
+            confirmBtn.classList.add('opacity-75');
+            confirmBtn.innerHTML = `
+                <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Suppression...
+            `;
+        });
+        
+        // Add pulse animation to warning box
+        const warningBox = document.querySelector('.bg-red-50');
+        if (warningBox) {
+            warningBox.classList.add('pulse-animation');
+        }
+    }
+});
+</script>
+{% endblock %}

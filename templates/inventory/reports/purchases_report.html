@@ -1,0 +1,988 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% load inventory_tags %}
+{% block title %}Rapport des Achats - Gestion de Stock{% endblock %}
+
+{% block header_title %}Rapport des Achats{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in-up">
+    <!-- Header with actions -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+        <div>
+            <h2 class="text-xl md:text-2xl font-bold text-secondary-800 flex items-center">
+                <i class="fas fa-chart-pie text-primary-600 mr-3"></i>
+                <span>Rapport des Achats</span>
+            </h2>
+            <p class="text-sm text-secondary-500 mt-1">Analyse détaillée des achats et des dépenses</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <button id="exportReportBtn" 
+                    class="px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 flex items-center gap-2 transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-lg">
+                <i class="fas fa-file-export"></i>
+                <span>Exporter</span>
+            </button>
+            <button id="printReportBtn" 
+                    class="px-4 py-2 bg-secondary-600 text-white rounded-lg font-medium hover:bg-secondary-700 focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:ring-offset-2 flex items-center gap-2 transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-lg">
+                <i class="fas fa-print"></i>
+                <span>Imprimer</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Date Filter -->
+    <div class="bg-white rounded-lg shadow-md p-4 mb-6 border-l-4 border-primary-500">
+        <form id="dateFilterForm" class="flex flex-col sm:flex-row gap-4 items-end flex-wrap">
+            <div class="w-full sm:w-auto flex-grow">
+                <label for="start_date" class="block text-sm font-medium text-secondary-700 mb-1">Date de début</label>
+                <input type="date" id="start_date" name="start_date" value="{{ start_date }}" 
+                       class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 block shadow-sm sm:text-sm border-secondary-300">
+            </div>
+            <div class="w-full sm:w-auto flex-grow">
+                <label for="end_date" class="block text-sm font-medium text-secondary-700 mb-1">Date de fin</label>
+                <input type="date" id="end_date" name="end_date" value="{{ end_date }}" 
+                       class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 block shadow-sm sm:text-sm border-secondary-300">
+            </div>
+            <div class="w-full sm:w-auto">
+                <button type="submit" class="w-full sm:w-auto px-4 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 flex items-center justify-center gap-2 transition-all duration-200">
+                    <i class="fas fa-filter"></i>
+                    <span>Filtrer</span>
+                </button>
+            </div>
+            <div class="w-full sm:w-auto">
+                <button type="button" id="resetFilterBtn" class="w-full sm:w-auto px-4 py-2 bg-secondary-200 text-secondary-800 rounded-lg font-medium hover:bg-secondary-300 focus:outline-none focus:ring-2 focus:ring-secondary-400 focus:ring-offset-2 flex items-center justify-center gap-2 transition-all duration-200">
+                    <i class="fas fa-redo"></i>
+                    <span>Réinitialiser</span>
+                </button>
+            </div>
+            <div class="w-full sm:w-auto flex-grow sm:flex-grow-0">
+                <select id="periodSelect" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 block shadow-sm sm:text-sm border-secondary-300">
+                    <option value="">Période prédéfinie</option>
+                    <option value="today">Aujourd'hui</option>
+                    <option value="yesterday">Hier</option>
+                    <option value="thisWeek">Cette semaine</option>
+                    <option value="lastWeek">Semaine dernière</option>
+                    <option value="thisMonth">Ce mois</option>
+                    <option value="lastMonth">Mois dernier</option>
+                    <option value="thisYear">Cette année</option>
+                    <option value="lastYear">Année dernière</option>
+                </select>
+            </div>
+        </form>
+    </div>
+
+    <!-- Dashboard Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-6">
+        <!-- Total Purchases Card -->
+        <div class="bg-white rounded-lg shadow-md p-4 md:p-6 border-l-4 border-primary-500 flex items-center">
+            <div class="rounded-full bg-primary-100 p-2 md:p-3 mr-3 md:mr-4">
+                <i class="fas fa-shopping-cart text-primary-600 text-lg md:text-xl"></i>
+            </div>
+            <div>
+                <h3 class="text-secondary-500 text-xs md:text-sm font-medium">Total des Achats</h3>
+                <p class="text-xl md:text-3xl font-bold text-secondary-800">{{ total_purchases|floatformat:0|intcomma }} FCFA</p>
+            </div>
+        </div>
+        
+        <!-- Total Paid Card -->
+        <div class="bg-white rounded-lg shadow-md p-4 md:p-6 border-l-4 border-green-500 flex items-center">
+            <div class="rounded-full bg-green-100 p-2 md:p-3 mr-3 md:mr-4">
+                <i class="fas fa-money-bill-wave text-green-600 text-lg md:text-xl"></i>
+            </div>
+            <div>
+                <h3 class="text-secondary-500 text-xs md:text-sm font-medium">Total Payé</h3>
+                <p class="text-xl md:text-3xl font-bold text-secondary-800">{{ total_paid|floatformat:0|intcomma }} FCFA</p>
+            </div>
+        </div>
+        
+        <!-- Total Due Card -->
+        <div class="bg-white rounded-lg shadow-md p-4 md:p-6 border-l-4 border-red-500 flex items-center">
+            <div class="rounded-full bg-red-100 p-2 md:p-3 mr-3 md:mr-4">
+                <i class="fas fa-exclamation-circle text-red-600 text-lg md:text-xl"></i>
+            </div>
+            <div>
+                <h3 class="text-secondary-500 text-xs md:text-sm font-medium">Total à Payer</h3>
+                <p class="text-xl md:text-3xl font-bold text-secondary-800">{{ total_due|floatformat:0|intcomma }} FCFA</p>
+            </div>
+        </div>
+        
+        <!-- Number of Purchases Card -->
+        <div class="bg-white rounded-lg shadow-md p-4 md:p-6 border-l-4 border-blue-500 flex items-center">
+            <div class="rounded-full bg-blue-100 p-2 md:p-3 mr-3 md:mr-4">
+                <i class="fas fa-receipt text-blue-600 text-lg md:text-xl"></i>
+            </div>
+            <div>
+                <h3 class="text-secondary-500 text-xs md:text-sm font-medium">Nombre d'Achats</h3>
+                <p class="text-xl md:text-3xl font-bold text-secondary-800">{{ purchases.count }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <!-- Purchases Trend Chart -->
+                <div class="bg-white rounded-lg shadow-md overflow-hidden border border-secondary-200">
+                    <div class="bg-secondary-50 px-4 md:px-6 py-3 md:py-4 border-b border-secondary-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                        <h3 class="font-medium text-secondary-800">Tendance des Achats</h3>
+                        <div class="flex gap-2">
+                            <select id="purchasesTrendPeriod" class="text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 px-2 py-1 border-secondary-300">
+                                <option value="daily">Journalier</option>
+                                <option value="weekly">Hebdomadaire</option>
+                                <option value="monthly">Mensuel</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="p-4 flex justify-center">
+                        <div class="w-full h-60 md:h-80">
+                            <canvas id="purchasesTrendChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Payment Status Chart -->
+                <div class="bg-white rounded-lg shadow-md overflow-hidden border border-secondary-200">
+                    <div class="bg-secondary-50 px-4 md:px-6 py-3 md:py-4 border-b border-secondary-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                        <h3 class="font-medium text-secondary-800">Statut des Paiements</h3>
+                        <div class="flex gap-2">
+                            <button class="text-secondary-500 hover:text-secondary-700 focus:outline-none" id="paymentStatusInfo">
+                                <i class="fas fa-info-circle"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="p-4 flex justify-center">
+                        <div class="w-full h-60 md:h-80">
+                            <canvas id="paymentStatusChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        
+            <!-- Additional Charts Section -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <!-- Top Suppliers Chart -->
+                <div class="bg-white rounded-lg shadow-md overflow-hidden border border-secondary-200">
+                    <div class="bg-secondary-50 px-4 md:px-6 py-3 md:py-4 border-b border-secondary-200">
+                        <h3 class="font-medium text-secondary-800">Principaux Fournisseurs</h3>
+                    </div>
+                    <div class="p-4 flex justify-center">
+                        <div class="w-full h-60 md:h-80">
+                            <canvas id="topSuppliersChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Top Products Chart -->
+                <div class="bg-white rounded-lg shadow-md overflow-hidden border border-secondary-200">
+                    <div class="bg-secondary-50 px-4 md:px-6 py-3 md:py-4 border-b border-secondary-200">
+                        <h3 class="font-medium text-secondary-800">Produits les Plus Achetés</h3>
+                    </div>
+                    <div class="p-4 flex justify-center">
+                        <div class="w-full h-60 md:h-80">
+                            <canvas id="topProductsChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        
+            <!-- Purchases Table -->
+            <div class="bg-white rounded-lg shadow-md overflow-hidden border border-secondary-200 mb-6">
+                <div class="bg-secondary-50 px-4 md:px-6 py-3 md:py-4 border-b border-secondary-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                    <h3 class="font-medium text-secondary-800">Liste des Achats</h3>
+                    <div class="relative w-full sm:w-auto">
+                        <input type="text" id="purchaseSearch" placeholder="Rechercher un achat..." class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 block shadow-sm sm:text-sm border-secondary-300">
+                        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                            <i class="fas fa-search text-secondary-400"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-secondary-200" id="purchasesTable">
+                        <thead class="bg-secondary-50">
+                            <tr>
+                                <th scope="col" class="px-3 md:px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Référence</th>
+                                <th scope="col" class="px-3 md:px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Date</th>
+                                <th scope="col" class="px-3 md:px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Fournisseur</th>
+                                <th scope="col" class="px-3 md:px-6 py-3 text-right text-xs font-medium text-secondary-500 uppercase tracking-wider">Montant Total</th>
+                                <th scope="col" class="px-3 md:px-6 py-3 text-right text-xs font-medium text-secondary-500 uppercase tracking-wider">Montant Payé</th>
+                                <th scope="col" class="px-3 md:px-6 py-3 text-center text-xs font-medium text-secondary-500 uppercase tracking-wider">Statut</th>
+                                <th scope="col" class="px-3 md:px-6 py-3 text-center text-xs font-medium text-secondary-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-secondary-200">
+                            {% for purchase in purchases %}
+                                <tr class="hover:bg-secondary-50">
+                                    <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap">
+                                        <div class="text-sm font-medium text-secondary-900">#{{ purchase.id }}</div>
+                                        <div class="text-xs text-secondary-500">{{ purchase.created_by.username }}</div>
+                                    </td>
+                                    <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap">
+                                        <div class="text-sm text-secondary-900">{{ purchase.purchase_date|date:"d/m/Y" }}</div>
+                                        <div class="text-xs text-secondary-500">{{ purchase.purchase_date|date:"H:i" }}</div>
+                                    </td>
+                                    <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap">
+                                        <div class="flex items-center">
+                                            <div class="flex-shrink-0 h-6 w-6 md:h-8 md:w-8 bg-secondary-100 rounded-full flex items-center justify-center text-secondary-500">
+                                                <i class="fas fa-truck"></i>
+                                            </div>
+                                            <div class="ml-3">
+                                                <div class="text-sm font-medium text-secondary-900">{{ purchase.supplier.name }}</div>
+                                                {% if purchase.supplier.phone %}
+                                                    <div class="text-xs text-secondary-500">{{ purchase.supplier.phone }}</div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-3 md:px-6 py-3 md:py-4 text-right whitespace-nowrap">
+                                        <div class="text-sm font-medium text-secondary-900">{{ purchase.total_amount|floatformat:0|intcomma }} FCFA</div>
+                                    </td>
+                                    <td class="px-3 md:px-6 py-3 md:py-4 text-right whitespace-nowrap">
+                                        <div class="text-sm font-medium text-secondary-900">{{ purchase.paid_amount|floatformat:0|intcomma }} FCFA</div>
+                                        {% if purchase.paid_amount < purchase.total_amount %}
+                                            <div class="text-xs text-red-600">Reste: {{ purchase.total_amount|sub:purchase.paid_amount|floatformat:0|intcomma }} FCFA</div>
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-3 md:px-6 py-3 md:py-4 text-center whitespace-nowrap">
+                                        {% if purchase.paid_amount >= purchase.total_amount %}
+                                            <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                                <i class="fas fa-check-circle mr-1"></i> Payé
+                                            </span>
+                                        {% elif purchase.paid_amount > 0 %}
+                                        <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                            <i class="fas fa-clock mr-1"></i> Partiel
+                                        </span>
+                                    {% else %}
+                                        <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                            <i class="fas fa-exclamation-circle mr-1"></i> Non payé
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-center text-sm font-medium">
+                                    <div class="flex justify-center gap-2">
+                                        <a href="{% url 'purchase_detail' purchase.id %}" 
+                                           class="text-primary-600 hover:text-primary-900" 
+                                           title="Voir détails">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{% url 'supplier_payment_create' %}?purchase={{ purchase.id }}" 
+                                           class="text-green-600 hover:text-green-900" 
+                                           title="Ajouter paiement">
+                                            <i class="fas fa-money-bill-wave"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        </div>
+        
+        <!-- Export Modal -->
+        <div id="exportModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 transform transition-all duration-300 scale-95 opacity-0" id="exportModalContent">
+            <div class="bg-primary-600 text-white px-6 py-4 rounded-t-lg flex justify-between items-center">
+                <h3 class="text-lg font-semibold">Exporter le rapport</h3>
+                <button id="closeExportModal" class="text-white hover:text-primary-200 transition-colors duration-150">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="p-6">
+                <p class="text-secondary-700 mb-4">
+                    Sélectionnez le format d'exportation pour le rapport des achats.
+                </p>
+                
+                <form id="exportForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-secondary-700 mb-1">Format d'exportation</label>
+                        <div class="flex flex-wrap gap-4">
+                            <label class="flex items-center">
+                                <input type="radio" name="format" value="pdf" checked class="text-primary-600 focus:ring-primary-500 h-4 w-4">
+                                <span class="ml-2 text-secondary-700">PDF</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="format" value="csv" class="text-primary-600 focus:ring-primary-500 h-4 w-4">
+                                <span class="ml-2 text-secondary-700">CSV</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="format" value="excel" class="text-primary-600 focus:ring-primary-500 h-4 w-4">
+                                <span class="ml-2 text-secondary-700">Excel</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-secondary-700 mb-1">Options</label>
+                        <div class="space-y-2">
+                            <label class="flex items-center">
+                                <input type="checkbox" name="include_charts" checked class="rounded text-primary-600 focus:ring-primary-500 h-4 w-4">
+                                <span class="ml-2 text-secondary-700">Inclure les graphiques</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" name="include_details" checked class="rounded text-primary-600 focus:ring-primary-500 h-4 w-4">
+                                <span class="ml-2 text-secondary-700">Inclure les détails des achats</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-3 pt-4">
+                        <button type="button" id="cancelExport" class="px-4 py-2 bg-secondary-200 text-secondary-800 rounded-lg font-medium hover:bg-secondary-300 focus:outline-none focus:ring-2 focus:ring-secondary-400 focus:ring-offset-2 transition-all duration-200">
+                            Annuler
+                        </button>
+                        <button type="submit" class="px-4 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-all duration-200 flex items-center gap-2">
+                            <i class="fas fa-file-export"></i>
+                            <span>Exporter</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        </div>
+        {% endblock %}
+        
+        {% block extra_css %}
+        <style>
+        /* Enhanced animations */
+        @keyframes fade-in-up {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .animate-fade-in-up {
+            animation: fade-in-up 0.4s ease-out forwards;
+        }
+        
+        /* Modal animation */
+        @keyframes modal-in {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        .modal-animate-in {
+            animation: modal-in 0.3s ease-out forwards;
+        }
+        
+        /* Print styles */
+        @media print {
+            body {
+                background-color: white;
+                font-size: 12pt;
+            }
+            
+            .no-print {
+                display: none !important;
+            }
+            
+            .page-break {
+                page-break-before: always;
+            }
+            
+            .print-full-width {
+                width: 100% !important;
+            }
+            
+            .print-container {
+                max-width: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            
+            .grid {
+                display: block;
+            }
+            
+            .grid > div {
+                margin-bottom: 20px;
+            }
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 640px) {
+            .h-80 {
+                height: 250px !important;
+            }
+            
+            .px-6 {
+                padding-left: 1rem !important;
+                padding-right: 1rem !important;
+            }
+            
+            .py-4 {
+                padding-top: 0.75rem !important;
+                padding-bottom: 0.75rem !important;
+            }
+            
+            .text-3xl {
+                font-size: 1.5rem !important;
+            }
+        }
+        </style>
+        {% endblock %}
+        
+        {% block extra_js %}
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+        // Date filter functionality
+        const dateFilterForm = document.getElementById('dateFilterForm');
+        const resetFilterBtn = document.getElementById('resetFilterBtn');
+        const periodSelect = document.getElementById('periodSelect');
+        const startDateInput = document.getElementById('start_date');
+        const endDateInput = document.getElementById('end_date');
+        
+        if (resetFilterBtn) {
+            resetFilterBtn.addEventListener('click', function() {
+                startDateInput.value = '';
+                endDateInput.value = '';
+                dateFilterForm.submit();
+            });
+        }
+        
+        if (periodSelect) {
+            periodSelect.addEventListener('change', function() {
+                const today = new Date();
+                let startDate = new Date();
+                let endDate = new Date();
+                
+                switch(this.value) {
+                    case 'today':
+                        // Start and end date are both today
+                        break;
+                        
+                    case 'yesterday':
+                        startDate.setDate(today.getDate() - 1);
+                        endDate.setDate(today.getDate() - 1);
+                        break;
+                        
+                    case 'thisWeek':
+                        // Start date is the first day of the current week (Sunday)
+                        startDate.setDate(today.getDate() - today.getDay());
+                        break;
+                        
+                    case 'lastWeek':
+                        // Start date is the first day of the previous week
+                        startDate.setDate(today.getDate() - today.getDay() - 7);
+                        // End date is the last day of the previous week
+                        endDate.setDate(today.getDate() - today.getDay() - 1);
+                        break;
+                        
+                    case 'thisMonth':
+                        // Start date is the first day of the current month
+                        startDate.setDate(1);
+                        break;
+                        
+                    case 'lastMonth':
+                        // Start date is the first day of the previous month
+                        startDate.setMonth(today.getMonth() - 1);
+                        startDate.setDate(1);
+                        // End date is the last day of the previous month
+                        endDate.setDate(0);
+                        break;
+                        
+                    case 'thisYear':
+                        // Start date is the first day of the current year
+                        startDate.setMonth(0);
+                        startDate.setDate(1);
+                        break;
+                        
+                    case 'lastYear':
+                        // Start date is the first day of the previous year
+                        startDate.setFullYear(today.getFullYear() - 1);
+                        startDate.setMonth(0);
+                        startDate.setDate(1);
+                        // End date is the last day of the previous year
+                        endDate.setFullYear(today.getFullYear() - 1);
+                        endDate.setMonth(11);
+                        endDate.setDate(31);
+                        break;
+                        
+                    default:
+                        return; // Do nothing if no valid option is selected
+                }
+                
+                // Format dates as YYYY-MM-DD for input fields
+                startDateInput.value = startDate.toISOString().split('T')[0];
+                endDateInput.value = endDate.toISOString().split('T')[0];
+                
+                // Submit the form
+                dateFilterForm.submit();
+            });
+        }
+        
+        // Purchases Trend Chart
+        const purchasesTrendCtx = document.getElementById('purchasesTrendChart').getContext('2d');
+        const purchasesTrendPeriod = document.getElementById('purchasesTrendPeriod');
+        
+        // Récupérer les données réelles du backend
+        const purchasesData = {{ purchases_trend_data|safe }};
+        
+        // Create the purchases trend chart
+        let currentPeriod = 'daily';
+        const purchasesTrendChart = new Chart(purchasesTrendCtx, {
+            type: 'line',
+            data: {
+                labels: purchasesData[currentPeriod].map(item => item.date),
+                datasets: [{
+                    label: 'Achats',
+                    data: purchasesData[currentPeriod].map(item => item.amount),
+                    backgroundColor: 'rgba(14, 165, 233, 0.2)',
+                    borderColor: 'rgba(14, 165, 233, 1)',
+                    borderWidth: 2,
+                    pointBackgroundColor: 'rgba(14, 165, 233, 1)',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 1,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value.toLocaleString() + ' FCFA';
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ': ' + context.raw.toLocaleString() + ' FCFA';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+            
+        // Update chart when period changes
+        if (purchasesTrendPeriod) {
+            purchasesTrendPeriod.addEventListener('change', function() {
+                currentPeriod = this.value;
+                
+                purchasesTrendChart.data.labels = purchasesData[currentPeriod].map(item => item.date);
+                purchasesTrendChart.data.datasets[0].data = purchasesData[currentPeriod].map(item => item.amount);
+                purchasesTrendChart.update();
+            });
+        }
+        
+        // Payment Status Chart
+        const paymentStatusCtx = document.getElementById('paymentStatusChart').getContext('2d');
+        
+        // Count purchases by payment status
+        let paidCount = 0;
+        let partialCount = 0;
+        let unpaidCount = 0;
+        
+        {% for purchase in purchases %}
+            {% if purchase.paid_amount >= purchase.total_amount %}
+                paidCount++;
+            {% elif purchase.paid_amount > 0 %}
+                partialCount++;
+            {% else %}
+                unpaidCount++;
+            {% endif %}
+        {% endfor %}
+        
+        const paymentStatusChart = new Chart(paymentStatusCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Payé', 'Partiellement payé', 'Non payé'],
+                datasets: [{
+                    data: [paidCount, partialCount, unpaidCount],
+                    backgroundColor: ['#10B981', '#FBBF24', '#EF4444'],
+                    borderColor: 'white',
+                    borderWidth: 2,
+                    hoverOffset: 10
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '60%',
+                plugins: {
+                    legend: {
+                        position: window.innerWidth < 768 ? 'bottom' : 'right',
+                        labels: {
+                            boxWidth: 15,
+                            padding: 15,
+                            font: {
+                                size: 12
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.raw || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = Math.round((value / total) * 100);
+                                return `${label}: ${value} achats (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Top Suppliers Chart
+        const topSuppliersCtx = document.getElementById('topSuppliersChart').getContext('2d');
+        
+        // Récupérer les données réelles du backend
+        const suppliersData = {{ suppliers_data|safe }};
+        
+        const topSuppliersChart = new Chart(topSuppliersCtx, {
+            type: 'bar',
+            data: {
+                labels: suppliersData.map(supplier => supplier.name),
+                datasets: [{
+                    label: 'Montant des achats',
+                    data: suppliersData.map(supplier => supplier.purchases),
+                    backgroundColor: 'rgba(14, 165, 233, 0.7)',
+                    borderColor: 'rgba(14, 165, 233, 1)',
+                    borderWidth: 1,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y',
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value.toLocaleString() + ' FCFA';
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ': ' + context.raw.toLocaleString() + ' FCFA';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Top Products Chart
+        const topProductsCtx = document.getElementById('topProductsChart').getContext('2d');
+        
+        // Récupérer les données réelles du backend
+        const productsData = {{ products_data|safe }};
+        
+        const topProductsChart = new Chart(topProductsCtx, {
+            type: 'bar',
+            data: {
+                labels: productsData.map(product => product.name),
+                datasets: [{
+                    label: 'Quantité achetée',
+                    data: productsData.map(product => product.quantity),
+                    backgroundColor: 'rgba(16, 185, 129, 0.7)',
+                    borderColor: 'rgba(16, 185, 129, 1)',
+                    borderWidth: 1,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+        
+        // Search functionality for purchases table
+        const searchInput = document.getElementById('purchaseSearch');
+        const purchasesTable = document.getElementById('purchasesTable');
+        
+        if (searchInput && purchasesTable) {
+            searchInput.addEventListener('keyup', function() {
+                const searchTerm = this.value.toLowerCase();
+                const rows = purchasesTable.querySelectorAll('tbody tr');
+                let hasResults = false;
+                
+                rows.forEach(row => {
+                    const id = row.querySelector('td:first-child').textContent.toLowerCase();
+                    const supplier = row.querySelector('td:nth-child(3)').textContent.toLowerCase();
+                    
+                    if (id.includes(searchTerm) || supplier.includes(searchTerm)) {
+                        row.style.display = '';
+                        hasResults = true;
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+                
+                // Show empty state if no results
+                const emptyState = document.getElementById('emptySearchState');
+                if (!hasResults) {
+                    if (!emptyState) {
+                        const tbody = purchasesTable.querySelector('tbody');
+                        const emptyRow = document.createElement('tr');
+                        emptyRow.id = 'emptySearchState';
+                        emptyRow.innerHTML = `
+                            <td colspan="7" class="px-6 py-12 text-center">
+                                <div class="flex flex-col items-center">
+                                    <div class="text-secondary-400 mb-2">
+                                        <i class="fas fa-search text-2xl"></i>
+                                    </div>
+                                    <p class="text-secondary-500">Aucun résultat pour "<span class="font-medium">${searchTerm}</span>"</p>
+                                    <button id="clearSearch" class="mt-4 text-primary-600 hover:text-primary-800 font-medium flex items-center gap-1">
+                                        <i class="fas fa-times-circle"></i> Effacer la recherche
+                                    </button>
+                                </div>
+                            </td>
+                        `;
+                        tbody.appendChild(emptyRow);
+                        
+                        // Add clear search functionality
+                        document.getElementById('clearSearch').addEventListener('click', function() {
+                            searchInput.value = '';
+                            searchInput.dispatchEvent(new Event('keyup'));
+                            searchInput.focus();
+                        });
+                    }
+                } else if (emptyState) {
+                    emptyState.remove();
+                }
+            });
+        }
+        
+        // Print functionality
+        const printReportBtn = document.getElementById('printReportBtn');
+        if (printReportBtn) {
+            printReportBtn.addEventListener('click', function() {
+                window.print();
+            });
+        }
+        
+        // Export functionality
+        const exportReportBtn = document.getElementById('exportReportBtn');
+        const exportModal = document.getElementById('exportModal');
+        const exportModalContent = document.getElementById('exportModalContent');
+        const closeExportModal = document.getElementById('closeExportModal');
+        const cancelExport = document.getElementById('cancelExport');
+        const exportForm = document.getElementById('exportForm');
+        
+        if (exportReportBtn && exportModal) {
+            exportReportBtn.addEventListener('click', function() {
+                exportModal.classList.remove('hidden');
+                setTimeout(() => {
+                    exportModalContent.classList.remove('scale-95', 'opacity-0');
+                    exportModalContent.classList.add('modal-animate-in');
+                }, 10);
+            });
+            
+            function closeExportModalFunction() {
+                exportModalContent.classList.add('scale-95', 'opacity-0');
+                exportModalContent.classList.remove('modal-animate-in');
+                setTimeout(() => {
+                    exportModal.classList.add('hidden');
+                }, 300);
+            }
+            
+            if (closeExportModal) {
+                closeExportModal.addEventListener('click', closeExportModalFunction);
+            }
+            
+            if (cancelExport) {
+                cancelExport.addEventListener('click', closeExportModalFunction);
+            }
+            
+            // Close modal when clicking outside
+            exportModal.addEventListener('click', function(e) {
+                if (e.target === exportModal) {
+                    closeExportModalFunction();
+                }
+            });
+            
+            // Handle export form submission
+            if (exportForm) {
+                exportForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    const format = document.querySelector('input[name="format"]:checked').value;
+                    const includeCharts = document.querySelector('input[name="include_charts"]').checked;
+                    const includeDetails = document.querySelector('input[name="include_details"]').checked;
+                    
+                    // Build query string
+                    let queryParams = `?format=${format}`;
+                    if (startDateInput.value) queryParams += `&start_date=${startDateInput.value}`;
+                    if (endDateInput.value) queryParams += `&end_date=${endDateInput.value}`;
+                    if (includeCharts) queryParams += `&include_charts=1`;
+                    if (includeDetails) queryParams += `&include_details=1`;
+                    
+                    // Redirect to export URL
+                    window.location.href = `/reports/purchases/export/${queryParams}`;
+                    
+                    closeExportModalFunction();
+                    showNotification(`Exportation du rapport au format ${format.toUpperCase()} en cours...`, 'info');
+                });
+            }
+        }
+        
+        // Info tooltips
+        const paymentStatusInfo = document.getElementById('paymentStatusInfo');
+        
+        if (paymentStatusInfo) {
+            paymentStatusInfo.addEventListener('click', function() {
+                showNotification('Ce graphique montre la répartition des achats selon leur statut de paiement.', 'info');
+            });
+        }
+        
+        // Notification helper
+        function showNotification(message, type = 'info') {
+            // Check if notification container exists, create if not
+            let notificationContainer = document.getElementById('notificationContainer');
+            if (!notificationContainer) {
+                notificationContainer = document.createElement('div');
+                notificationContainer.id = 'notificationContainer';
+                notificationContainer.className = 'fixed bottom-4 right-4 z-50 flex flex-col gap-2 no-print';
+                document.body.appendChild(notificationContainer);
+            }
+            
+            // Create notification with appropriate styling based on type
+            const notification = document.createElement('div');
+            let bgColor, textColor, icon;
+            
+            switch(type) {
+                case 'success':
+                    bgColor = 'bg-green-100 border-l-4 border-green-500';
+                    textColor = 'text-green-800';
+                    icon = 'fa-check-circle';
+                    break;
+                case 'error':
+                    bgColor = 'bg-red-100 border-l-4 border-red-500';
+                    textColor = 'text-red-800';
+                    icon = 'fa-exclamation-circle';
+                    break;
+                case 'warning':
+                    bgColor = 'bg-yellow-100 border-l-4 border-yellow-500';
+                    textColor = 'text-yellow-800';
+                    icon = 'fa-exclamation-triangle';
+                    break;
+                default: // info
+                    bgColor = 'bg-blue-100 border-l-4 border-blue-500';
+                    textColor = 'text-blue-800';
+                    icon = 'fa-info-circle';
+            }
+            
+            notification.className = `${bgColor} ${textColor} px-4 py-3 rounded-lg shadow-lg mb-2 transform transition-all duration-300 translate-y-2 opacity-0 flex items-center max-w-md`;
+            notification.innerHTML = `
+                <i class="fas ${icon} mr-2 text-lg"></i>
+                <div class="flex-1">${message}</div>
+                <button class="ml-2 text-secondary-400 hover:text-secondary-600 focus:outline-none">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            
+            notificationContainer.appendChild(notification);
+            
+            // Animate in
+            setTimeout(() => {
+                notification.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+            
+            // Add close button functionality
+            const closeBtn = notification.querySelector('button');
+            closeBtn.addEventListener('click', () => {
+                notification.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => {
+                    notification.remove();
+                }, 300);
+            });
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.classList.add('translate-y-2', 'opacity-0');
+                    setTimeout(() => {
+                        if (notification.parentNode) {
+                            notification.remove();
+                        }
+                    }, 300);
+                }
+            }, 5000);
+        }
+        
+        // Responsive adjustments for mobile
+        function handleResponsiveLayout() {
+            const isMobile = window.innerWidth < 768;
+            
+            // Adjust chart heights for mobile
+            const chartContainers = document.querySelectorAll('.h-60, .h-80');
+            chartContainers.forEach(container => {
+                if (isMobile) {
+                    container.style.height = '250px';
+                } else {
+                    container.style.height = container.classList.contains('h-60') ? '240px' : '320px';
+                }
+            });
+            
+            // Adjust legend position for mobile
+            if (isMobile) {
+                if (paymentStatusChart) {
+                    paymentStatusChart.options.plugins.legend.position = 'bottom';
+                    paymentStatusChart.update();
+                }
+                
+                if (purchasesTrendChart) {
+                    purchasesTrendChart.options.plugins.legend.display = false;
+                    purchasesTrendChart.update();
+                }
+            } else {
+                if (paymentStatusChart) {
+                    paymentStatusChart.options.plugins.legend.position = 'right';
+                    paymentStatusChart.update();
+                }
+                
+                if (purchasesTrendChart) {
+                    purchasesTrendChart.options.plugins.legend.display = true;
+                    purchasesTrendChart.update();
+                }
+            }
+        }
+        
+        // Call responsive adjustments on load and resize
+        handleResponsiveLayout();
+        window.addEventListener('resize', handleResponsiveLayout);
+        });
+        </script>
+        {% endblock %}
+        

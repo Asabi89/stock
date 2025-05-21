@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block title %}Supprimer le produit - Gestion de Stock{% endblock %}
+
+{% block header_title %}Supprimer le produit{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in-up">
+    <!-- Header -->
+    <div class="mb-6">
+        <h2 class="text-xl md:text-2xl font-bold text-secondary-800 flex items-center">
+            <i class="fas fa-trash-alt text-red-600 mr-3"></i>
+            <span>Supprimer le produit</span>
+        </h2>
+        <p class="text-sm text-secondary-500 mt-1">
+            Cette action est irréversible. Veuillez confirmer la suppression.
+        </p>
+    </div>
+    
+    <!-- Confirmation Card -->
+    <div class="bg-white rounded-lg shadow-lg overflow-hidden border border-red-200">
+        <div class="bg-red-50 px-6 py-4 border-b border-red-200">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+                </div>
+                <div class="ml-3">
+                    <h3 class="font-medium text-red-800">Confirmation de suppression</h3>
+                </div>
+            </div>
+        </div>
+        
+        <div class="p-6">
+            <div class="mb-6">
+                <div class="bg-secondary-50 rounded-lg p-4 border border-secondary-200">
+                    <h4 class="font-medium text-secondary-800 mb-2">Informations sur le produit</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-sm text-secondary-500">Nom:</p>
+                            <p class="font-medium">{{ product.name }}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-secondary-500">Catégorie:</p>
+                            <p class="font-medium">{{ product.category.name|default:"-" }}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-secondary-500">Prix d'achat:</p>
+                            <p class="font-medium">{{ product.purchase_price }} €</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-secondary-500">Prix de vente:</p>
+                            <p class="font-medium">{{ product.selling_price }} €</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-secondary-500">Quantité en stock:</p>
+                            <p class="font-medium">{{ product.quantity }} {{ product.unit }}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-secondary-500">Fournisseur:</p>
+                            <p class="font-medium">{{ product.supplier.name|default:"-" }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-red-50 rounded-lg p-4 border border-red-200 mb-6">
+                <p class="text-red-800 font-medium">
+                    <i class="fas fa-exclamation-circle mr-2"></i>
+                    Attention: La suppression de ce produit est définitive et ne peut pas être annulée.
+                </p>
+                <p class="text-red-700 mt-2 text-sm">
+                    Si ce produit est associé à des ventes ou des achats, ces relations seront également supprimées.
+                    Cela peut affecter vos rapports financiers et l'historique de vos transactions.
+                </p>
+            </div>
+            
+            <form method="post" class="mt-6">
+                {% csrf_token %}
+                
+                <!-- Form Actions -->
+                <div class="flex justify-between">
+                    <a href="{% url 'product_list' %}" class="px-4 py-2 bg-secondary-200 text-secondary-800 rounded-lg font-medium hover:bg-secondary-300 focus:outline-none focus:ring-2 focus:ring-secondary-400 focus:ring-offset-2 flex items-center gap-2 transition-all duration-200">
+                        <i class="fas fa-arrow-left"></i>
+                        <span>Annuler</span>
+                    </a>
+                    <button type="submit" class="px-6 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 flex items-center gap-2 transition-all duration-200">
+                        <i class="fas fa-trash-alt"></i>
+                        <span>Confirmer la suppression</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Animation */
+    @keyframes fade-in-up {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .animate-fade-in-up {
+        animation: fade-in-up 0.4s ease-out forwards;
+    }
+    
+    /* Shake animation for delete button */
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+        20%, 40%, 60%, 80% { transform: translateX(5px); }
+    }
+    
+    button[type="submit"]:hover {
+        animation: shake 0.6s cubic-bezier(.36,.07,.19,.97) both;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add confirmation dialog
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        if (confirm('Êtes-vous vraiment sûr de vouloir supprimer ce produit? Cette action est irréversible et peut affecter vos données de vente et d\'achat.')) {
+            this.submit();
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block title %}Connexion - Gestion de Stock{% endblock %}
+
+{% block auth_content %}
+<div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-secondary-800 to-secondary-900 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md w-full bg-white rounded-xl shadow-2xl overflow-hidden transform transition-all duration-300 hover:shadow-xl">
+        <!-- Logo and Header -->
+        <div class="bg-primary-600 py-6 px-8">
+            <div class="text-center">
+                <h2 class="text-2xl font-bold text-white font-heading">
+                    <i class="fas fa-warehouse mr-2"></i> Gestion de Stock
+                </h2>
+                <p class="mt-2 text-primary-100">Connectez-vous pour accéder à votre espace</p>
+            </div>
+        </div>
+        
+        <!-- Login Form -->
+        <div class="py-8 px-8 sm:px-10">
+            {% if form.errors %}
+            <div class="mb-4 bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-md" role="alert">
+                <p class="font-medium">Erreur de connexion</p>
+                <p>Nom d'utilisateur ou mot de passe incorrect. Veuillez réessayer.</p>
+            </div>
+            {% endif %}
+            
+            <form class="space-y-6" method="post" action="{% url 'login' %}" id="loginForm">
+                {% csrf_token %}
+                
+                <div class="space-y-2">
+                    <label for="{{ form.username.id_for_label }}" class="block text-sm font-medium text-secondary-700">
+                        Nom d'utilisateur
+                    </label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-user text-secondary-400"></i>
+                        </div>
+                        <input id="{{ form.username.id_for_label }}" name="{{ form.username.html_name }}" type="text" required 
+                               class="pl-10 form-input focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-secondary-300 rounded-md" 
+                               placeholder="Entrez votre nom d'utilisateur">
+                    </div>
+                </div>
+                
+                <div class="space-y-2">
+                    <label for="{{ form.password.id_for_label }}" class="block text-sm font-medium text-secondary-700">
+                        Mot de passe
+                    </label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-lock text-secondary-400"></i>
+                        </div>
+                        <input id="{{ form.password.id_for_label }}" name="{{ form.password.html_name }}" type="password" required 
+                               class="pl-10 form-input focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-secondary-300 rounded-md" 
+                               placeholder="Entrez votre mot de passe">
+                        <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                            <button type="button" id="togglePassword" class="text-secondary-400 hover:text-secondary-600 focus:outline-none">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <input id="remember_me" name="remember_me" type="checkbox" 
+                               class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-secondary-300 rounded">
+                        <label for="remember_me" class="ml-2 block text-sm text-secondary-700">
+                            Se souvenir de moi
+                        </label>
+                    </div>
+                    
+                    <div class="text-sm">
+                        <a href="#" class="font-medium text-primary-600 hover:text-primary-500">
+                            Mot de passe oublié?
+                        </a>
+                    </div>
+                </div>
+                
+                <div>
+                    <button type="submit" id="loginButton" 
+                            class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors duration-200">
+                        <span class="absolute left-0 inset-y-0 flex items-center pl-3">
+                            <i class="fas fa-sign-in-alt text-primary-400 group-hover:text-primary-300 transition-colors duration-200"></i>
+                        </span>
+                        Connexion
+                    </button>
+                </div>
+                
+                <input type="hidden" name="next" value="{{ next }}">
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Toggle password visibility
+    const togglePassword = document.getElementById('togglePassword');
+    const passwordInput = document.getElementById('{{ form.password.id_for_label }}');
+    
+    if (togglePassword && passwordInput) {
+        togglePassword.addEventListener('click', function() {
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            
+            // Toggle eye icon
+            const eyeIcon = togglePassword.querySelector('i');
+            eyeIcon.classList.toggle('fa-eye');
+            eyeIcon.classList.toggle('fa-eye-slash');
+        });
+    }
+    
+    // Add loading state to login button
+    const loginForm = document.getElementById('loginForm');
+    const loginButton = document.getElementById('loginButton');
+    
+    if (loginForm && loginButton) {
+        loginForm.addEventListener('submit', function() {
+            // Disable button and show loading state
+            loginButton.disabled = true;
+            loginButton.innerHTML = '<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Connexion en cours...';
+        });
+    }
+    
+    // Add animation to the login card
+    const loginCard = document.querySelector('.max-w-md');
+    if (loginCard) {
+        loginCard.classList.add('animate-fadeIn');
+    }
+});
+</script>
+
+<style>
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeIn {
+    animation: fadeIn 0.5s ease-out forwards;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,372 @@
+{% extends "base.html" %}
+
+{% block title %}{% if category %}Modifier{% else %}Nouvelle{% endif %} Catégorie - Gestion de Stock{% endblock %}
+
+{% block header_title %}{% if category %}Modifier{% else %}Nouvelle{% endif %} Catégorie{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto animate-fade-in-up">
+    <!-- Breadcrumb -->
+    <nav class="mb-6 text-sm bg-white p-3 rounded-lg shadow-sm border border-secondary-200" aria-label="Breadcrumb">
+        <ol class="flex items-center space-x-2">
+            <li>
+                <a href="{% url 'dashboard' %}" class="text-secondary-500 hover:text-secondary-700 transition-colors duration-150 flex items-center">
+                    <i class="fas fa-home"></i>
+                    <span class="ml-1 hidden sm:inline">Accueil</span>
+                </a>
+            </li>
+            <li class="flex items-center">
+                <i class="fas fa-chevron-right text-secondary-400 text-xs mx-1"></i>
+                <a href="{% url 'category_list' %}" class="text-secondary-500 hover:text-secondary-700 transition-colors duration-150 flex items-center">
+                    <i class="fas fa-tags sm:hidden"></i>
+                    <span class="sm:inline">Catégories</span>
+                </a>
+            </li>
+            <li class="flex items-center">
+                <i class="fas fa-chevron-right text-secondary-400 text-xs mx-1"></i>
+                <span class="text-primary-600 font-medium" aria-current="page">{% if category %}Modifier{% else %}Nouvelle{% endif %} catégorie</span>
+            </li>
+        </ol>
+    </nav>
+
+    <!-- Form Card -->
+    <div class="bg-white rounded-lg shadow-lg overflow-hidden border border-secondary-200 transition-all duration-300 hover:shadow-xl">
+        <div class="bg-gradient-to-r from-primary-600 to-primary-700 px-6 py-4 flex items-center">
+            <div class="bg-white bg-opacity-20 p-3 rounded-lg mr-3">
+                <i class="fas {% if category %}fa-edit{% else %}fa-plus-circle{% endif %} text-white text-xl"></i>
+            </div>
+            <h2 class="text-lg font-semibold text-white">{% if category %}Modifier la catégorie{% else %}Créer une nouvelle catégorie{% endif %}</h2>
+        </div>
+
+        <form method="post" class="p-4 sm:p-6" id="categoryForm">
+            {% csrf_token %}
+            <div class="space-y-6">
+                <!-- Name field -->
+                <div class="form-group bg-secondary-50 p-4 sm:p-5 rounded-lg border-2 border-secondary-200 transition-all duration-200 hover:shadow-md hover:border-primary-200 hover:bg-primary-50 focus-within:shadow-md focus-within:border-primary-300 focus-within:bg-primary-50">
+                    <label for="{{ form.name.id_for_label }}" class="block text-sm font-medium mb-2 text-secondary-700 flex items-center">
+                        Nom <span class="text-red-500 ml-1 pulse-required">*</span>
+                    </label>
+                    <div class="relative mb-1">
+                        <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-secondary-400 pointer-events-none">
+                            <i class="fas fa-tag"></i>
+                        </span>
+                        <input 
+                            type="text" 
+                            id="{{ form.name.id_for_label }}" 
+                            name="{{ form.name.html_name }}"
+                            value="{{ form.name.value|default:'' }}" 
+                            required
+                            class="w-full px-4 py-3 pl-10 border-2 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white shadow-sm hover:shadow border-l-4 border-primary-500 {% if form.name.errors %}border-red-300 border-l-red-500{% endif %}"
+                            placeholder="Nom de la catégorie">
+                        <span class="absolute right-3 top-1/2 transform -translate-y-1/2 text-secondary-400 pointer-events-none text-xs">
+                            <span id="nameCharCount">0</span>/50
+                        </span>
+                    </div>
+                    {% if form.name.errors %}
+                    <p class="mt-1.5 text-sm text-red-600 flex items-center">
+                        <i class="fas fa-exclamation-circle mr-1"></i>{{ form.name.errors.0 }}
+                    </p>
+                    {% endif %}
+                    <p class="mt-1.5 text-xs text-secondary-500 flex items-center">
+                        <i class="fas fa-info-circle mr-1"></i>Le nom doit être unique et descriptif.
+                    </p>
+                </div>
+
+                <!-- Description field -->
+                <div class="form-group bg-secondary-50 p-4 sm:p-5 rounded-lg border-2 border-secondary-200 transition-all duration-200 hover:shadow-md hover:border-primary-200 hover:bg-primary-50 focus-within:shadow-md focus-within:border-primary-300 focus-within:bg-primary-50">
+                    <label for="{{ form.description.id_for_label }}" class="block text-sm font-medium mb-2 text-secondary-700 flex items-center">
+                        Description
+                    </label>
+                    <div class="relative mb-1">
+                        <span class="absolute left-3 top-5 text-secondary-400 pointer-events-none">
+                            <i class="fas fa-align-left"></i>
+                        </span>
+                        <textarea 
+                            id="{{ form.description.id_for_label }}" 
+                            name="{{ form.description.html_name }}" 
+                            rows="4"
+                            class="w-full px-4 py-3 pl-10 border-2 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white shadow-sm hover:shadow border-l-4 border-primary-500 resize-none {% if form.description.errors %}border-red-300 border-l-red-500{% endif %}"
+                            placeholder="Description détaillée de la catégorie">{{ form.description.value|default:'' }}</textarea>
+                        <span class="absolute right-3 top-5 text-secondary-400 pointer-events-none text-xs">
+                            <span id="descCharCount">0</span>/255
+                        </span>
+                    </div>
+                    {% if form.description.errors %}
+                    <p class="mt-1.5 text-sm text-red-600 flex items-center">
+                        <i class="fas fa-exclamation-circle mr-1"></i>{{ form.description.errors.0 }}
+                    </p>
+                    {% endif %}
+                    <p class="mt-1.5 text-xs text-secondary-500 flex items-center">
+                        <i class="fas fa-info-circle mr-1"></i>Une description claire aide à comprendre l'objectif de cette catégorie.
+                    </p>
+                </div>
+
+                <!-- Form actions -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between sm:space-x-3 space-y-3 sm:space-y-0 pt-4 border-t border-secondary-200">
+                    <div class="text-xs text-secondary-500">
+                        <span class="text-red-500">*</span> Champs obligatoires
+                    </div>
+                    <div class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3 w-full sm:w-auto">
+                        <a href="{% url 'category_list' %}" class="w-full sm:w-auto px-4 py-2 bg-secondary-200 text-secondary-800 rounded-lg font-medium hover:bg-secondary-300 focus:outline-none focus:ring-2 focus:ring-secondary-400 focus:ring-offset-2 flex items-center justify-center gap-2 transition-all duration-200 transform hover:scale-105">
+                            <i class="fas fa-times"></i> Annuler
+                        </a>
+                        <button type="submit" class="w-full sm:w-auto px-4 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 flex items-center justify-center gap-2 transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-lg" id="submitButton">
+                            <i class="fas fa-save"></i> {% if category %}Mettre à jour{% else %}Enregistrer{% endif %}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Tips Card -->
+    <div class="mt-6 bg-blue-50 rounded-lg p-4 border border-blue-200 shadow-sm">
+        <h3 class="text-blue-800 font-medium flex items-center">
+            <i class="fas fa-lightbulb text-yellow-500 mr-2"></i>Conseils pour créer des catégories efficaces
+        </h3>
+        <ul class="mt-2 space-y-2 text-sm text-blue-700">
+            <li class="flex items-start">
+                <i class="fas fa-check-circle mt-1 mr-2 text-green-500"></i>
+                <span>Utilisez des noms courts et descriptifs pour faciliter la recherche.</span>
+            </li>
+            <li class="flex items-start">
+                <i class="fas fa-check-circle mt-1 mr-2 text-green-500"></i>
+                <span>Évitez de créer trop de catégories similaires, préférez une structure simple.</span>
+            </li>
+            <li class="flex items-start">
+                <i class="fas fa-check-circle mt-1 mr-2 text-green-500"></i>
+                <span>Ajoutez une description détaillée pour aider les autres utilisateurs.</span>
+            </li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Enhanced animations */
+    @keyframes fade-in-up {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .animate-fade-in-up {
+        animation: fade-in-up 0.4s ease-out forwards;
+    }
+    
+    /* Pulse animation for required fields */
+    @keyframes pulse-required {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.6; }
+    }
+    
+    .pulse-required {
+        animation: pulse-required 2s infinite;
+        @apply text-red-500;
+    }
+    
+    /* Shake animation for validation */
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-5px); }
+        50% { transform: translateX(5px); }
+        75% { transform: translateX(-5px); }
+    }
+    
+    .shake-animation {
+        animation: shake 0.4s ease-in-out;
+    }
+    
+    /* Character counter colors */
+    .text-yellow-600 {
+        color: #d97706;
+    }
+    
+    .text-red-600 {
+        color: #dc2626;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 640px) {
+        .form-group {
+            padding: 1rem;
+        }
+        
+        input, textarea, button, a.btn-primary, a.btn-secondary {
+            font-size: 0.95rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Form validation and submission
+    const form = document.getElementById('categoryForm');
+    const submitButton = document.getElementById('submitButton');
+    const nameInput = document.getElementById('{{ form.name.id_for_label }}');
+    const descriptionInput = document.getElementById('{{ form.description.html_name }}');
+    const nameCharCount = document.getElementById('nameCharCount');
+    const descCharCount = document.getElementById('descCharCount');
+    
+    if (form && submitButton && nameInput) {
+        // Character counter for name field
+        function updateNameCounter() {
+            const maxLength = 50; // Adjust based on your model's max_length
+            const currentLength = nameInput.value.length;
+            nameCharCount.textContent = currentLength;
+            
+            if (currentLength > maxLength - 10 && currentLength <= maxLength) {
+                nameCharCount.parentElement.classList.add('text-yellow-600');
+                nameCharCount.parentElement.classList.remove('text-red-600');
+            } else if (currentLength > maxLength) {
+                nameCharCount.parentElement.classList.add('text-red-600');
+                nameCharCount.parentElement.classList.remove('text-yellow-600');
+            } else {
+                nameCharCount.parentElement.classList.remove('text-yellow-600', 'text-red-600');
+            }
+        }
+        
+        nameInput.addEventListener('input', updateNameCounter);
+        updateNameCounter(); // Initial count
+        
+        // Character counter for description field
+        function updateDescCounter() {
+            const maxLength = 255; // Adjust based on your model's max_length
+            const currentLength = descriptionInput.value.length;
+            descCharCount.textContent = currentLength;
+            
+            if (currentLength > maxLength - 30 && currentLength <= maxLength) {
+                descCharCount.parentElement.classList.add('text-yellow-600');
+                descCharCount.parentElement.classList.remove('text-red-600');
+            } else if (currentLength > maxLength) {
+                descCharCount.parentElement.classList.add('text-red-600');
+                descCharCount.parentElement.classList.remove('text-yellow-600');
+            } else {
+                descCharCount.parentElement.classList.remove('text-yellow-600', 'text-red-600');
+            }
+        }
+        
+        descriptionInput.addEventListener('input', updateDescCounter);
+        updateDescCounter(); // Initial count
+        
+        // Add focus effects
+        const enhancedInputs = document.querySelectorAll('input, textarea');
+        enhancedInputs.forEach(input => {
+            input.addEventListener('focus', function() {
+                this.closest('.form-group').classList.add('ring-2', 'ring-primary-200');
+                this.classList.add('shadow');
+                // Légère animation de déplacement vers le haut
+                this.style.transform = 'translateY(-2px)';
+            });
+            
+            input.addEventListener('blur', function() {
+                this.closest('.form-group').classList.remove('ring-2', 'ring-primary-200');
+                if (!this.value) {
+                    this.classList.remove('shadow');
+                }
+                // Retour à la position normale
+                this.style.transform = '';
+            });
+        });
+        
+        // Form validation
+        form.addEventListener('submit', function(e) {
+            if (nameInput.value.trim() === '') {
+                e.preventDefault();
+                
+                // Shake animation for empty field
+                nameInput.classList.add('border-red-300', 'border-l-red-500', 'shake-animation');
+                setTimeout(() => {
+                    nameInput.classList.remove('shake-animation');
+                }, 500);
+                
+                // Show error message if not already present
+                const errorContainer = nameInput.closest('.relative').nextElementSibling;
+                if (!errorContainer || !errorContainer.classList.contains('text-red-600')) {
+                    const errorMsg = document.createElement('p');
+                    errorMsg.className = 'mt-1.5 text-sm text-red-600 flex items-center';
+                    errorMsg.innerHTML = '<i class="fas fa-exclamation-circle mr-1"></i> Ce champ est obligatoire.';
+                    nameInput.closest('.relative').after(errorMsg);
+                }
+                
+                // Focus on empty field
+                nameInput.focus();
+                
+                // Scroll to the error
+                nameInput.closest('.form-group').scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return false;
+            }
+            
+            // Show loading state
+            submitButton.disabled = true;
+            submitButton.classList.add('opacity-75');
+            submitButton.innerHTML = `<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Enregistrement...`;
+        });
+        
+        // Reset validation state on input
+        nameInput.addEventListener('input', function() {
+            this.classList.remove('border-red-300', 'border-l-red-500');
+            const errorMsg = this.closest('.relative').nextElementSibling;
+            if (errorMsg && errorMsg.classList.contains('text-red-600')) {
+                errorMsg.remove();
+            }
+        });
+        
+        // Auto-resize textarea
+        function autoResizeTextarea() {
+            descriptionInput.style.height = 'auto';
+            descriptionInput.style.height = (descriptionInput.scrollHeight) + 'px';
+        }
+        
+        descriptionInput.addEventListener('input', autoResizeTextarea);
+        window.addEventListener('resize', autoResizeTextarea);
+        
+        // Initial resize
+        setTimeout(autoResizeTextarea, 0);
+        
+        // Add visual feedback on field interaction
+        const formGroups = document.querySelectorAll('.form-group');
+        formGroups.forEach(group => {
+            group.addEventListener('mouseenter', function() {
+                this.classList.add('border-primary-200');
+            });
+            
+            group.addEventListener('mouseleave', function() {
+                if (!this.querySelector(':focus')) {
+                    this.classList.remove('border-primary-200');
+                }
+            });
+        });
+        
+        // Amélioration de l'accessibilité pour les utilisateurs mobiles
+        if (window.innerWidth < 768) {
+            // Augmenter légèrement la taille des zones cliquables sur mobile
+            const clickableElements = document.querySelectorAll('button, a, input, textarea');
+            clickableElements.forEach(el => {
+                if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+                    el.style.padding = '0.75rem 1rem';
+                }
+            });
+        }
+        
+        // Effet de transition lors du chargement initial du formulaire
+        const formCard = document.querySelector('.bg-white.rounded-lg.shadow-lg');
+        if (formCard) {
+            formCard.classList.add('opacity-0');
+            setTimeout(() => {
+                formCard.classList.remove('opacity-0');
+                formCard.classList.add('transition-opacity', 'duration-500', 'opacity-100');
+            }, 100);
+        }
+    }
+});
+</script>
+{% endblock %}

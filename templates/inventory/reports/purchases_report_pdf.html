@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html>
+    {% load inventory_tags %}
+<head>
+    <meta charset="UTF-8">
+    <title>Rapport des Achats</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 1cm;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.4;
+            color: #333;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+        }
+        .company-name {
+            font-size: 24px;
+            font-weight: bold;
+            color: #0284c7;
+            margin-bottom: 5px;
+        }
+        .report-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .report-date {
+            font-size: 12px;
+            color: #666;
+        }
+        .summary {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f8fafc;
+            border-radius: 5px;
+        }
+        .summary-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #0284c7;
+        }
+        .summary-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+        }
+        .summary-card {
+            padding: 10px;
+            border-radius: 5px;
+            background-color: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .summary-card-title {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        .summary-card-value {
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .section {
+            margin-bottom: 20px;
+        }
+        .section-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #0284c7;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f1f5f9;
+            font-weight: bold;
+        }
+        tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
+        .text-right {
+            text-align: right;
+        }
+        .text-center {
+            text-align: center;
+        }
+        .status {
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: bold;
+            display: inline-block;
+        }
+        .status-paid {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+        .status-partial {
+            background-color: #fef9c3;
+            color: #854d0e;
+        }
+        .status-unpaid {
+            background-color: #fee2e2;
+            color: #b91c1c;
+        }
+        .footer {
+            text-align: center;
+            font-size: 10px;
+            color: #666;
+            margin-top: 30px;
+            border-top: 1px solid #ddd;
+            padding-top: 10px;
+        }
+        .page-break {
+            page-break-before: always;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="company-name">{{ company_name }}</div>
+        <div>{{ company_address }} | {{ company_phone }} | {{ company_email }}</div>
+        <div class="report-title">Rapport des Achats</div>
+        <div class="report-date">
+            {% if start_date and end_date %}
+                Période: Du {{ start_date }} au {{ end_date }}
+            {% else %}
+                Tous les achats
+            {% endif %}
+            | Généré le: {{ today|date:"d/m/Y H:i" }}
+        </div>
+    </div>
+    
+    <div class="summary">
+        <div class="summary-title">Résumé</div>
+        <div class="summary-grid">
+            <div class="summary-card">
+                <div class="summary-card-title">Total des Achats</div>
+                <div class="summary-card-value">{{ total_purchases|floatformat:0 }} FCFA</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-card-title">Total Payé</div>
+                <div class="summary-card-value">{{ total_paid|floatformat:0 }} FCFA</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-card-title">Reste à Payer</div>
+                <div class="summary-card-value">{{ total_due|floatformat:0 }} FCFA</div>
+            </div>
+        </div>
+    </div>
+    
+    {% if include_charts %}
+    <div class="section">
+        <div class="section-title">Statut des Paiements</div>
+        <table>
+            <tr>
+                <th>Statut</th>
+                <th class="text-right">Nombre</th>
+                <th class="text-right">Pourcentage</th>
+            </tr>
+            <tr>
+                <td>Payé</td>
+                <td class="text-right">{{ payment_status.paid }}</td>
+                <td class="text-right">
+                    {% with total=payment_status.paid|add:payment_status.partial|add:payment_status.unpaid %}
+                        {% if total > 0 %}
+                            {{ payment_status.paid|multiply:100|divide:total|floatformat:1 }}%
+                        {% else %}
+                            0%
+                        {% endif %}
+                    {% endwith %}
+                </td>
+            </tr>
+            <tr>
+                <td>Partiellement payé</td>
+                <td class="text-right">{{ payment_status.partial }}</td>
+                <td class="text-right">
+                    {% with total=payment_status.paid|add:payment_status.partial|add:payment_status.unpaid %}
+                        {% if total > 0 %}
+                            {{ payment_status.partial|multiply:100|divide:total|floatformat:1 }}%
+                        {% else %}
+                            0%
+                        {% endif %}
+                    {% endwith %}
+                </td>
+            </tr>
+            <tr>
+                <td>Non payé</td>
+                <td class="text-right">{{ payment_status.unpaid }}</td>
+                <td class="text-right">
+                    {% with total=payment_status.paid|add:payment_status.partial|add:payment_status.unpaid %}
+                        {% if total > 0 %}
+                            {{ payment_status.unpaid|multiply:100|divide:total|floatformat:1 }}%
+                        {% else %}
+                            0%
+                        {% endif %}
+                    {% endwith %}
+                </td>
+            </tr>
+        </table>
+    </div>
+    
+    <div class="section">
+        <div class="section-title">Principaux Fournisseurs</div>
+        <table>
+            <tr>
+                <th>Fournisseur</th>
+                <th class="text-right">Montant des Achats</th>
+            </tr>
+            {% for supplier in suppliers_data %}
+            <tr>
+                <td>{{ supplier.name }}</td>
+                <td class="text-right">{{ supplier.purchases|floatformat:0 }} FCFA</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+    
+    <div class="section">
+        <div class="section-title">Produits les Plus Achetés</div>
+        <table>
+            <tr>
+                <th>Produit</th>
+                <th class="text-right">Quantité</th>
+            </tr>
+            {% for product in products_data %}
+            <tr>
+                <td>{{ product.name }}</td>
+                <td class="text-right">{{ product.quantity }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+    {% endif %}
+    
+    {% if include_details %}
+    <div class="section{% if include_charts %} page-break{% endif %}">
+        <div class="section-title">Liste des Achats</div>
+        <table>
+            <tr>
+                <th>Référence</th>
+                <th>Date</th>
+                <th>Fournisseur</th>
+                <th class="text-right">Montant Total</th>
+                <th class="text-right">Montant Payé</th>
+                <th class="text-right">Reste à Payer</th>
+                <th class="text-center">Statut</th>
+            </tr>
+            {% for purchase in purchases %}
+            <tr>
+                <td>#{{ purchase.id }}</td>
+                <td>{{ purchase.purchase_date|date:"d/m/Y H:i" }}</td>
+                <td>{{ purchase.supplier.name }}</td>
+                <td class="text-right">{{ purchase.total_amount|floatformat:0 }} FCFA</td>
+                <td class="text-right">{{ purchase.paid_amount|floatformat:0 }} FCFA</td>
+                <td class="text-right">{{ purchase.total_amount|sub:purchase.paid_amount|floatformat:0 }} FCFA</td>
+                <td class="text-center">
+                    {% if purchase.paid_amount >= purchase.total_amount %}
+                        <span class="status status-paid">Payé</span>
+                    {% elif purchase.paid_amount > 0 %}
+                        <span class="status status-partial">Partiel</span>
+                    {% else %}
+                        <span class="status status-unpaid">Non payé</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+    {% endif %}
+    
+    <div class="footer">
+        <p>{{ company_name }} - Rapport des Achats - Page 1</p>
+    </div>
+</body>
+</html>

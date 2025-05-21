@@ -1,0 +1,524 @@
+{% extends "base.html" %}
+
+{% block title %}Nouvel Achat - Gestion de Stock{% endblock %}
+
+{% block header_title %}Création d'un Achat{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in-up">
+    <!-- Header -->
+    <div class="mb-6">
+        <h2 class="text-xl md:text-2xl font-bold text-secondary-800 flex items-center">
+            <i class="fas fa-shopping-cart text-primary-600 mr-3"></i>
+            <span>Nouvel achat</span>
+        </h2>
+        <p class="text-sm text-secondary-500 mt-1">Enregistrez un nouvel achat auprès d'un fournisseur</p>
+    </div>
+
+    <!-- Form container -->
+    <div class="bg-white rounded-lg shadow-lg overflow-hidden border border-secondary-200">
+        <form method="post" id="purchaseForm">
+            {% csrf_token %}
+            <input type="hidden" name="items_data" id="items_data" value="[]">
+            
+            <div class="p-6 border-b border-secondary-200">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="{{ form.supplier.id_for_label }}" class="block text-sm font-medium text-secondary-700 mb-1">
+                            Fournisseur <span class="text-red-600">*</span>
+                        </label>
+                        {{ form.supplier }}
+                        {% if form.supplier.errors %}
+                            <p class="text-red-600 text-xs mt-1">{{ form.supplier.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div>
+                        <label for="{{ form.purchase_date.id_for_label }}" class="block text-sm font-medium text-secondary-700 mb-1">
+                            Date d'achat <span class="text-red-600">*</span>
+                        </label>
+                        {{ form.purchase_date }}
+                        {% if form.purchase_date.errors %}
+                            <p class="text-red-600 text-xs mt-1">{{ form.purchase_date.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Products section -->
+            <div class="p-6 bg-secondary-50 border-b border-secondary-200">
+                <h3 class="text-lg font-medium text-secondary-800 mb-4">Articles achetés</h3>
+                
+                <div class="mb-4 flex flex-col md:flex-row gap-4">
+                    <div class="flex-grow">
+                        <label for="product_select" class="block text-sm font-medium text-secondary-700 mb-1">
+                            Sélectionner un produit
+                        </label>
+                        <select id="product_select" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 block shadow-sm sm:text-sm border-secondary-300">
+                            <option value="">-- Choisir un produit --</option>
+                            {% for product in products %}
+                                <option value="{{ product.id }}" data-price="{{ product.purchase_price }}" data-unit="{{ product.unit }}">
+                                    {{ product.name }} (Stock: {{ product.quantity }} {{ product.unit }})
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="md:w-32">
+                        <label for="quantity" class="block text-sm font-medium text-secondary-700 mb-1">
+                            Quantité
+                        </label>
+                        <input type="number" id="quantity" min="1" value="1" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 block shadow-sm sm:text-sm border-secondary-300">
+                    </div>
+                    
+                    <div class="md:w-48">
+                        <label for="unit_price" class="block text-sm font-medium text-secondary-700 mb-1">
+                            Prix unitaire
+                        </label>
+                        <input type="number" id="unit_price" min="0" step="0.01" value="0.00" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 block shadow-sm sm:text-sm border-secondary-300">
+                    </div>
+                    
+                    <div class="md:w-32 flex items-end">
+                        <button type="button" id="add_item" class="w-full px-4 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 flex items-center justify-center gap-2 transition-all duration-200">
+                            <i class="fas fa-plus"></i>
+                            <span>Ajouter</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Items table -->
+                <div class="bg-white rounded-lg border border-secondary-200 overflow-hidden">
+                    <table class="min-w-full divide-y divide-secondary-200" id="items_table">
+                        <thead class="bg-secondary-100">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-secondary-700 uppercase tracking-wider">
+                                    Produit
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-secondary-700 uppercase tracking-wider">
+                                    Quantité
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-secondary-700 uppercase tracking-wider">
+                                    Prix unitaire
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-secondary-700 uppercase tracking-wider">
+                                    Sous-total
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-secondary-700 uppercase tracking-wider">
+                                    Actions
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-secondary-200" id="items_body">
+                            <tr id="empty_row">
+                                <td colspan="5" class="px-6 py-8 text-center text-secondary-500">
+                                    <div class="flex flex-col items-center">
+                                        <div class="text-secondary-400 mb-2">
+                                            <i class="fas fa-shopping-cart text-2xl"></i>
+                                        </div>
+                                        <p>Aucun article ajouté</p>
+                                        <p class="text-xs mt-1">Utilisez le formulaire ci-dessus pour ajouter des articles à cet achat</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                        <tfoot class="bg-secondary-50">
+                            <tr>
+                                <td colspan="3" class="px-6 py-3 text-right font-medium text-secondary-700">
+                                    Total:
+                                </td>
+                                <td class="px-6 py-3 text-right font-medium text-secondary-900" id="total_amount">
+                                    0 FCFA
+                                </td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Payment section -->
+            <div class="p-6 border-b border-secondary-200">
+                <h3 class="text-lg font-medium text-secondary-800 mb-4">Informations de paiement</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="{{ form.total_amount.id_for_label }}" class="block text-sm font-medium text-secondary-700 mb-1">
+                            Montant total
+                        </label>
+                        {{ form.total_amount }}
+                        <p class="text-xs text-secondary-500 mt-1">Calculé automatiquement à partir des articles</p>
+                    </div>
+                    
+                    <div>
+                        <label for="{{ form.paid_amount.id_for_label }}" class="block text-sm font-medium text-secondary-700 mb-1">
+                            Montant payé
+                        </label>
+                        {{ form.paid_amount }}
+                        <p class="text-xs text-secondary-500 mt-1">Laissez à 0 si aucun paiement n'a été effectué</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Form actions -->
+            <div class="px-6 py-4 bg-secondary-50 flex justify-end gap-3">
+                <a href="{% url 'purchase_list' %}" class="px-4 py-2 bg-secondary-200 text-secondary-800 rounded-lg font-medium hover:bg-secondary-300 focus:outline-none focus:ring-2 focus:ring-secondary-400 focus:ring-offset-2 transition-all duration-200">
+                    Annuler
+                </a>
+                <button type="submit" id="submit_button" class="px-4 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-all duration-200 flex items-center gap-2">
+                    <i class="fas fa-save"></i>
+                    <span>Enregistrer l'achat</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Elements
+    const productSelect = document.getElementById('product_select');
+    const quantityInput = document.getElementById('quantity');
+    const unitPriceInput = document.getElementById('unit_price');
+    const addItemButton = document.getElementById('add_item');
+    const itemsTable = document.getElementById('items_table');
+    const itemsBody = document.getElementById('items_body');
+    const emptyRow = document.getElementById('empty_row');
+    const totalAmountDisplay = document.getElementById('total_amount');
+    const totalAmountInput = document.getElementById('id_total_amount');
+    const itemsDataInput = document.getElementById('items_data');
+    const purchaseForm = document.getElementById('purchaseForm');
+    
+    // Items array to store the purchase items
+    let items = [];
+    
+    // Update product price when a product is selected
+    productSelect.addEventListener('change', function() {
+        if (this.value) {
+            const selectedOption = this.options[this.selectedIndex];
+            const price = selectedOption.getAttribute('data-price');
+            unitPriceInput.value = price;
+        } else {
+            unitPriceInput.value = '0.00';
+        }
+    });
+    
+    // Add item to the purchase
+    addItemButton.addEventListener('click', function() {
+        const productId = productSelect.value;
+        if (!productId) {
+            showNotification('Veuillez sélectionner un produit', 'error');
+            return;
+        }
+        
+        const quantity = parseInt(quantityInput.value);
+        if (isNaN(quantity) || quantity <= 0) {
+            showNotification('La quantité doit être supérieure à 0', 'error');
+            return;
+        }
+        
+        const unitPrice = parseFloat(unitPriceInput.value);
+        if (isNaN(unitPrice) || unitPrice <= 0) {
+            showNotification('Le prix unitaire doit être supérieur à 0', 'error');
+            return;
+        }
+        
+        const selectedOption = productSelect.options[productSelect.selectedIndex];
+        const productName = selectedOption.text.split(' (')[0];
+        const productUnit = selectedOption.getAttribute('data-unit');
+        
+        // Check if product already exists in the items
+        const existingItemIndex = items.findIndex(item => item.product_id === productId);
+        
+        if (existingItemIndex !== -1) {
+            // Update existing item
+            items[existingItemIndex].quantity += quantity;
+            items[existingItemIndex].unit_price = unitPrice; // Update price in case it changed
+            
+            // Update the row in the table
+            const row = itemsBody.querySelector(`tr[data-product-id="${productId}"]`);
+            const quantityCell = row.querySelector('td:nth-child(2)');
+            const priceCell = row.querySelector('td:nth-child(3)');
+            const subtotalCell = row.querySelector('td:nth-child(4)');
+            
+            quantityCell.textContent = `${items[existingItemIndex].quantity} ${productUnit}`;
+            priceCell.textContent = `${unitPrice.toFixed(2)} FCFA`;
+            
+            const subtotal = items[existingItemIndex].quantity * unitPrice;
+            subtotalCell.textContent = `${subtotal.toFixed(2)} FCFA`;
+            
+            showNotification(`Quantité de ${productName} mise à jour`, 'success');
+        } else {
+            // Add new item
+            const newItem = {
+                product_id: productId,
+                product_name: productName,
+                quantity: quantity,
+                unit: productUnit,
+                unit_price: unitPrice
+            };
+            
+            items.push(newItem);
+            
+            // Hide empty row if visible
+            if (emptyRow.style.display !== 'none') {
+                emptyRow.style.display = 'none';
+            }
+            
+            // Create new row
+            const newRow = document.createElement('tr');
+            newRow.setAttribute('data-product-id', productId);
+            newRow.className = 'hover:bg-secondary-50';
+            
+            const subtotal = quantity * unitPrice;
+            
+            newRow.innerHTML = `
+                <td class="px-6 py-4">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 h-10 w-10 bg-secondary-100 rounded-full flex items-center justify-center text-secondary-500">
+                            <i class="fas fa-box"></i>
+                        </div>
+                        <div class="ml-4">
+                            <div class="text-sm font-medium text-secondary-900">${productName}</div>
+                        </div>
+                    </div>
+                </td>
+                <td class="px-6 py-4 text-right whitespace-nowrap text-sm text-secondary-900">
+                    ${quantity} ${productUnit}
+                </td>
+                <td class="px-6 py-4 text-right whitespace-nowrap text-sm text-secondary-900">
+                    ${unitPrice.toFixed(2)} FCFA
+                </td>
+                <td class="px-6 py-4 text-right whitespace-nowrap text-sm font-medium text-secondary-900">
+                    ${subtotal.toFixed(2)} FCFA
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                    <button type="button" class="remove-item bg-red-100 hover:bg-red-200 text-red-700 hover:text-red-800 p-2 rounded-md transition-colors duration-150" title="Supprimer">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </td>
+            `;
+            
+            itemsBody.appendChild(newRow);
+            
+            // Add event listener to remove button
+            const removeButton = newRow.querySelector('.remove-item');
+            removeButton.addEventListener('click', function() {
+                removeItem(productId);
+            });
+            
+            showNotification(`${productName} ajouté à l'achat`, 'success');
+        }
+        
+        // Update total
+        updateTotal();
+        
+        // Reset form
+        productSelect.value = '';
+        quantityInput.value = '1';
+        unitPriceInput.value = '0.00';
+    });
+    
+    // Remove item from the purchase
+    function removeItem(productId) {
+        // Find the item in the array
+        const itemIndex = items.findIndex(item => item.product_id === productId);
+        if (itemIndex !== -1) {
+            const removedItem = items[itemIndex];
+            
+            // Remove from array
+            items.splice(itemIndex, 1);
+            
+            // Remove row from table
+            const row = itemsBody.querySelector(`tr[data-product-id="${productId}"]`);
+            row.remove();
+            
+            // Show empty row if no items left
+            if (items.length === 0) {
+                emptyRow.style.display = '';
+            }
+            
+            // Update total
+            updateTotal();
+            
+            showNotification(`${removedItem.product_name} supprimé de l'achat`, 'info');
+        }
+    }
+    
+    // Update total amount
+    function updateTotal() {
+        let total = 0;
+        items.forEach(item => {
+            total += item.quantity * item.unit_price;
+        });
+        
+        totalAmountDisplay.textContent = `${total.toFixed(2)} FCFA`;
+        totalAmountInput.value = total.toFixed(2);
+        
+        // Update items data input for form submission
+        itemsDataInput.value = JSON.stringify(items);
+    }
+    
+    // Form submission
+    purchaseForm.addEventListener('submit', function(e) {
+        if (items.length === 0) {
+            e.preventDefault();
+            showNotification('Veuillez ajouter au moins un article à l\'achat', 'error');
+            return;
+        }
+        
+        // Disable submit button to prevent double submission
+        const submitButton = document.getElementById('submit_button');
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enregistrement...';
+    });
+    
+    // Notification helper
+    function showNotification(message, type = 'info') {
+        // Check if notification container exists, create if not
+        let notificationContainer = document.getElementById('notificationContainer');
+        if (!notificationContainer) {
+            notificationContainer = document.createElement('div');
+            notificationContainer.id = 'notificationContainer';
+            notificationContainer.className = 'fixed bottom-4 right-4 z-50 flex flex-col gap-2';
+            document.body.appendChild(notificationContainer);
+        }
+        
+        // Create notification with appropriate styling based on type
+        const notification = document.createElement('div');
+        let bgColor, textColor, icon;
+        
+        switch(type) {
+            case 'success':
+                bgColor = 'bg-green-100 border-l-4 border-green-500';
+                textColor = 'text-green-800';
+                icon = 'fa-check-circle';
+                break;
+            case 'error':
+                bgColor = 'bg-red-100 border-l-4 border-red-500';
+                textColor = 'text-red-800';
+                icon = 'fa-exclamation-circle';
+                break;
+            case 'warning':
+                bgColor = 'bg-yellow-100 border-l-4 border-yellow-500';
+                textColor = 'text-yellow-800';
+                icon = 'fa-exclamation-triangle';
+                break;
+            default: // info
+                bgColor = 'bg-blue-100 border-l-4 border-blue-500';
+                textColor = 'text-blue-800';
+                icon = 'fa-info-circle';
+        }
+        
+        notification.className = `${bgColor} ${textColor} px-4 py-3 rounded-lg shadow-lg mb-2 transform transition-all duration-300 translate-y-2 opacity-0 flex items-center max-w-md`;
+        notification.innerHTML = `
+            <i class="fas ${icon} mr-2 text-lg"></i>
+            <div class="flex-1">${message}</div>
+            <button class="ml-2 text-secondary-400 hover:text-secondary-600 focus:outline-none">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+        
+        notificationContainer.appendChild(notification);
+        
+        // Animate in
+        setTimeout(() => {
+            notification.classList.remove('translate-y-2', 'opacity-0');
+        }, 10);
+        
+        // Add close button functionality
+        const closeBtn = notification.querySelector('button');
+        closeBtn.addEventListener('click', () => {
+            notification.classList.add('translate-y-2', 'opacity-0');
+            setTimeout(() => {
+                notification.remove();
+            }, 300);
+        });
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.remove();
+                    }
+                }, 300);
+            }
+        }, 5000);
+    }
+    
+    // Fetch product details via API
+    function fetchProductDetails(productId) {
+        return fetch(`/api/products/${productId}/`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Erreur lors de la récupération des détails du produit');
+                }
+                return response.json();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showNotification(error.message, 'error');
+            });
+    }
+    
+    // Initialize tooltips
+    function initTooltips() {
+        const tooltipElements = document.querySelectorAll('[title]');
+        
+        tooltipElements.forEach(element => {
+            const tooltipText = element.getAttribute('title');
+            element.removeAttribute('title'); // Remove default browser tooltip
+            
+            element.addEventListener('mouseenter', function(e) {
+                const tooltip = document.createElement('div');
+                tooltip.className = 'bg-secondary-800 text-white px-2 py-1 rounded text-xs absolute z-50 transform -translate-x-1/2 -translate-y-full opacity-0 transition-opacity duration-200';
+                tooltip.style.left = e.pageX + 'px';
+                tooltip.style.top = (e.pageY - 10) + 'px';
+                tooltip.textContent = tooltipText;
+                tooltip.id = 'custom-tooltip';
+                
+                document.body.appendChild(tooltip);
+                
+                // Show tooltip with delay
+                setTimeout(() => {
+                    tooltip.classList.remove('opacity-0');
+                }, 200);
+            });
+            
+            element.addEventListener('mouseleave', function() {
+                const tooltip = document.getElementById('custom-tooltip');
+                if (tooltip) {
+                    tooltip.classList.add('opacity-0');
+                    setTimeout(() => {
+                        if (tooltip.parentNode) {
+                            tooltip.parentNode.removeChild(tooltip);
+                        }
+                    }, 200);
+                }
+            });
+        });
+    }
+    
+    // Initialize tooltips
+    initTooltips();
+    
+    // Add keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        // Alt+A to add item
+        if (e.altKey && e.key === 'a') {
+            e.preventDefault();
+            addItemButton.click();
+        }
+        
+        // Alt+S to submit form
+        if (e.altKey && e.key === 's') {
+            e.preventDefault();
+            purchaseForm.submit();
+        }
+    });
+});
+</script>
+{% endblock %}

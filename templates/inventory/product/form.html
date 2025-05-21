@@ -1,0 +1,607 @@
+{% extends "base.html" %}
+
+{% block title %}{% if product %}Modifier{% else %}Ajouter{% endif %} un produit - Gestion de Stock{% endblock %}
+
+{% block header_title %}{% if product %}Modifier{% else %}Ajouter{% endif %} un produit{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in-up">
+    <div class="bg-white rounded-lg shadow-lg p-6 border border-secondary-200 transition-all duration-300 hover:shadow-xl">
+        <div class="mb-6 border-b pb-4 flex items-center">
+            <div class="bg-primary-100 text-primary-600 p-3 rounded-full mr-4">
+                <i class="fas {% if product %}fa-edit{% else %}fa-plus-circle{% endif %} text-xl"></i>
+            </div>
+            <div>
+                <h2 class="text-2xl font-bold text-secondary-800">{% if product %}Modifier{% else %}Ajouter{% endif %} un produit</h2>
+                <p class="text-secondary-500 mt-1">Remplissez les informations du produit</p>
+            </div>
+        </div>
+
+        <form method="post" class="space-y-6" id="productForm">
+            {% csrf_token %}
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Nom du produit -->
+                <div class="form-group bg-secondary-50 p-4 rounded-lg border border-secondary-200 transition-all duration-200">
+                    <label for="{{ form.name.id_for_label }}" class="block text-secondary-700 font-medium mb-2 flex items-center">
+                        <i class="fas fa-tag text-primary-500 mr-2"></i>
+                        Nom du produit*
+                    </label>
+                    <div class="relative">
+                        {{ form.name }}
+                        {% if form.name.errors %}
+                        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                            <i class="fas fa-exclamation-circle text-red-500"></i>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% if form.name.errors %}
+                    <p class="text-red-600 text-sm mt-1 flex items-center">
+                        <i class="fas fa-exclamation-circle mr-1"></i>
+                        {{ form.name.errors.0 }}
+                    </p>
+                    {% endif %}
+                </div>
+
+                <!-- Catégorie -->
+                <div class="form-group bg-secondary-50 p-4 rounded-lg border border-secondary-200 transition-all duration-200">
+                    <label for="{{ form.category.id_for_label }}" class="block text-secondary-700 font-medium mb-2 flex items-center">
+                        <i class="fas fa-folder text-primary-500 mr-2"></i>
+                        Catégorie
+                    </label>
+                    <div class="relative">
+                        {{ form.category }}
+                        {% if form.category.errors %}
+                        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                            <i class="fas fa-exclamation-circle text-red-500"></i>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% if form.category.errors %}
+                    <p class="text-red-600 text-sm mt-1 flex items-center">
+                        <i class="fas fa-exclamation-circle mr-1"></i>
+                        {{ form.category.errors.0 }}
+                    </p>
+                    {% endif %}
+                </div>
+
+                <!-- Prix d'achat -->
+                <div class="form-group bg-secondary-50 p-4 rounded-lg border border-secondary-200 transition-all duration-200">
+                    <label for="{{ form.purchase_price.id_for_label }}" class="block text-secondary-700 font-medium mb-2 flex items-center">
+                        <i class="fas fa-shopping-cart text-primary-500 mr-2"></i>
+                        Prix d'achat*
+                    </label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <span class="text-secondary-500">€</span>
+                        </div>
+                        {{ form.purchase_price }}
+                        {% if form.purchase_price.errors %}
+                        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                            <i class="fas fa-exclamation-circle text-red-500"></i>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% if form.purchase_price.errors %}
+                    <p class="text-red-600 text-sm mt-1 flex items-center">
+                        <i class="fas fa-exclamation-circle mr-1"></i>
+                        {{ form.purchase_price.errors.0 }}
+                    </p>
+                    {% endif %}
+                </div>
+
+                <!-- Prix de vente -->
+                <div class="form-group bg-secondary-50 p-4 rounded-lg border border-secondary-200 transition-all duration-200">
+                    <label for="{{ form.selling_price.id_for_label }}" class="block text-secondary-700 font-medium mb-2 flex items-center">
+                        <i class="fas fa-cash-register text-primary-500 mr-2"></i>
+                        Prix de vente*
+                    </label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <span class="text-secondary-500">€</span>
+                        </div>
+                        {{ form.selling_price }}
+                        {% if form.selling_price.errors %}
+                        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                            <i class="fas fa-exclamation-circle text-red-500"></i>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% if form.selling_price.errors %}
+                    <p class="text-red-600 text-sm mt-1 flex items-center">
+                        <i class="fas fa-exclamation-circle mr-1"></i>
+                        {{ form.selling_price.errors.0 }}
+                    </p>
+                    {% endif %}
+                    <div id="margin-calculator" class="text-sm text-secondary-600 mt-2 hidden">
+                        <span>Marge: <span id="margin-amount" class="font-semibold"></span> (<span id="margin-percent" class="font-semibold"></span>)</span>
+                    </div>
+                </div>
+
+                <!-- Quantité -->
+                <div class="form-group bg-secondary-50 p-4 rounded-lg border border-secondary-200 transition-all duration-200">
+                    <label for="{{ form.quantity.id_for_label }}" class="block text-secondary-700 font-medium mb-2 flex items-center">
+                        <i class="fas fa-boxes text-primary-500 mr-2"></i>
+                        Quantité*
+                    </label>
+                    <div class="relative">
+                        {{ form.quantity }}
+                        {% if form.quantity.errors %}
+                        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                            <i class="fas fa-exclamation-circle text-red-500"></i>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% if form.quantity.errors %}
+                    <p class="text-red-600 text-sm mt-1 flex items-center">
+                        <i class="fas fa-exclamation-circle mr-1"></i>
+                        {{ form.quantity.errors.0 }}
+                    </p>
+                    {% endif %}
+                </div>
+
+                <!-- Unité -->
+                <div class="form-group bg-secondary-50 p-4 rounded-lg border border-secondary-200 transition-all duration-200">
+                    <label for="{{ form.unit.id_for_label }}" class="block text-secondary-700 font-medium mb-2 flex items-center">
+                        <i class="fas fa-balance-scale text-primary-500 mr-2"></i>
+                        Unité*
+                    </label>
+                    <div class="relative">
+                        {{ form.unit }}
+                        {% if form.unit.errors %}
+                        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                            <i class="fas fa-exclamation-circle text-red-500"></i>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% if form.unit.errors %}
+                    <p class="text-red-600 text-sm mt-1 flex items-center">
+                        <i class="fas fa-exclamation-circle mr-1"></i>
+                        {{ form.unit.errors.0 }}
+                    </p>
+                    {% endif %}
+                </div>
+
+                <!-- Seuil minimum -->
+                <div class="form-group bg-secondary-50 p-4 rounded-lg border border-secondary-200 transition-all duration-200">
+                    <label for="{{ form.minimum_threshold.id_for_label }}" class="block text-secondary-700 font-medium mb-2 flex items-center">
+                        <i class="fas fa-exclamation-triangle text-primary-500 mr-2"></i>
+                        Seuil d'alerte*
+                    </label>
+                    <div class="relative">
+                        {{ form.minimum_threshold }}
+                        {% if form.minimum_threshold.errors %}
+                        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                            <i class="fas fa-exclamation-circle text-red-500"></i>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% if form.minimum_threshold.errors %}
+                    <p class="text-red-600 text-sm mt-1 flex items-center">
+                        <i class="fas fa-exclamation-circle mr-1"></i>
+                        {{ form.minimum_threshold.errors.0 }}
+                    </p>
+                    {% endif %}
+                    <p class="text-secondary-500 text-sm mt-1">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        Quantité minimale avant alerte de stock bas
+                    </p>
+                </div>
+
+                <!-- Description -->
+                <div class="md:col-span-2 form-group bg-secondary-50 p-4 rounded-lg border border-secondary-200 transition-all duration-200">
+                    <label for="{{ form.description.id_for_label }}" class="block text-secondary-700 font-medium mb-2 flex items-center">
+                        <i class="fas fa-align-left text-primary-500 mr-2"></i>
+                        Description
+                    </label>
+                    <div class="relative">
+                        {{ form.description }}
+                        {% if form.description.errors %}
+                        <div class="absolute top-2 right-2 flex items-center pointer-events-none">
+                            <i class="fas fa-exclamation-circle text-red-500"></i>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% if form.description.errors %}
+                    <p class="text-red-600 text-sm mt-1 flex items-center">
+                        <i class="fas fa-exclamation-circle mr-1"></i>
+                        {{ form.description.errors.0 }}
+                    </p>
+                    {% endif %}
+                    <div class="flex justify-between items-center mt-2">
+                        <p class="text-secondary-500 text-sm">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            Informations complémentaires sur le produit
+                        </p>
+                        <span id="char-count" class="text-xs text-secondary-500">0 caractères</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row justify-between pt-6 border-t border-secondary-200 gap-4">
+                <a href="{% url 'product_list' %}" class="btn btn-secondary flex items-center justify-center">
+                    <i class="fas fa-arrow-left mr-2"></i> Retour
+                </a>
+                <button type="submit" id="submitButton" class="btn btn-primary flex items-center justify-center shadow-md hover:shadow-lg transform hover:-translate-y-1 transition-all duration-200">
+                    <i class="fas fa-save mr-2"></i> {% if product %}Mettre à jour{% else %}Enregistrer{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Profit Calculator Card -->
+    <div class="mt-6 bg-white rounded-lg shadow-lg p-6 border border-secondary-200 transition-all duration-300 hover:shadow-xl">
+        <div class="flex items-center mb-4">
+            <div class="bg-green-100 text-green-600 p-3 rounded-full mr-4">
+                <i class="fas fa-chart-line text-xl"></i>
+            </div>
+            <div>
+                <h3 class="text-lg font-bold text-secondary-800">Calculateur de rentabilité</h3>
+                <p class="text-secondary-500 text-sm">Estimez votre marge et votre rentabilité</p>
+            </div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-secondary-50 p-4 rounded-lg border border-secondary-200">
+                <h4 class="text-sm font-medium text-secondary-700 mb-2">Prix d'achat</h4>
+                <div class="text-2xl font-bold text-secondary-800" id="calc-purchase-price">0.00 €</div>
+            </div>
+            
+            <div class="bg-secondary-50 p-4 rounded-lg border border-secondary-200">
+                <h4 class="text-sm font-medium text-secondary-700 mb-2">Prix de vente</h4>
+                <div class="text-2xl font-bold text-secondary-800" id="calc-selling-price">0.00 €</div>
+            </div>
+            
+            <div class="bg-green-50 p-4 rounded-lg border border-green-200">
+                <h4 class="text-sm font-medium text-green-700 mb-2">Marge brute</h4>
+                <div class="text-2xl font-bold text-green-800" id="calc-margin">0.00 €</div>
+                <div class="text-sm text-green-600 mt-1" id="calc-margin-percent">0%</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Enhanced animations */
+    @keyframes fade-in-up {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .animate-fade-in-up {
+        animation: fade-in-up 0.4s ease-out forwards;
+    }
+    
+    /* Form styling */
+    .form-group {
+        transition: all 0.3s ease;
+    }
+    
+    .form-group:focus-within {
+        border-color: #0ea5e9;
+        box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.2);
+    }
+    
+    /* Input styling */
+    input[type="text"], 
+    input[type="number"], 
+    textarea, 
+    select {
+        @apply w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500;
+    }
+    
+    input[type="text"], 
+    input[type="number"] {
+        @apply pl-8;
+    }
+    
+    /* Error styling */
+    input:invalid, 
+    textarea:invalid, 
+    select:invalid {
+        @apply border-red-300 focus:ring-red-500 focus:border-red-500;
+    }
+    
+    /* Button hover effects */
+    .btn-primary:hover {
+        @apply transform -translate-y-1;
+        box-shadow: 0 10px 15px -3px rgba(14, 165, 233, 0.2), 0 4px 6px -2px rgba(14, 165, 233, 0.1);
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 640px) {
+        .form-group {
+            @apply p-3;
+        }
+        
+        .btn {
+            @apply w-full justify-center;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Get form elements
+    const form = document.getElementById('productForm');
+    const nameInput = document.getElementById('{{ form.name.id_for_label }}');
+    const purchasePriceInput = document.getElementById('{{ form.purchase_price.id_for_label }}');
+    const sellingPriceInput = document.getElementById('{{ form.selling_price.id_for_label }}');
+    const quantityInput = document.getElementById('{{ form.quantity.id_for_label }}');
+    const thresholdInput = document.getElementById('{{ form.minimum_threshold.id_for_label }}');
+    const descriptionInput = document.getElementById('{{ form.description.id_for_label }}');
+    const submitButton = document.getElementById('submitButton');
+    
+    // Format inputs
+    if (purchasePriceInput) {
+        purchasePriceInput.classList.add('pl-8');
+    }
+    
+    if (sellingPriceInput) {
+        sellingPriceInput.classList.add('pl-8');
+    }
+    
+    // Character counter for description
+    if (descriptionInput) {
+        const charCount = document.getElementById('char-count');
+        
+        function updateCharCount() {
+            const count = descriptionInput.value.length;
+            charCount.textContent = `${count} caractère${count !== 1 ? 's' : ''}`;
+        }
+        
+        descriptionInput.addEventListener('input', updateCharCount);
+        updateCharCount(); // Initial count
+    }
+    
+    // Margin calculator
+    const marginCalculator = document.getElementById('margin-calculator');
+    const marginAmount = document.getElementById('margin-amount');
+    const marginPercent = document.getElementById('margin-percent');
+    
+    // Profit calculator card elements
+    const calcPurchasePrice = document.getElementById('calc-purchase-price');
+    const calcSellingPrice = document.getElementById('calc-selling-price');
+    const calcMargin = document.getElementById('calc-margin');
+    const calcMarginPercent = document.getElementById('calc-margin-percent');
+    
+    function calculateMargin() {
+        if (purchasePriceInput && sellingPriceInput && 
+            purchasePriceInput.value && sellingPriceInput.value) {
+            
+            const purchasePrice = parseFloat(purchasePriceInput.value);
+            const sellingPrice = parseFloat(sellingPriceInput.value);
+            
+            if (!isNaN(purchasePrice) && !isNaN(sellingPrice)) {
+                const margin = sellingPrice - purchasePrice;
+                const marginPercentValue = purchasePrice > 0 ? (margin / purchasePrice) * 100 : 0;
+                
+                // Update inline calculator
+                marginCalculator.classList.remove('hidden');
+                marginAmount.textContent = `${margin.toFixed(2)} €`;
+                marginPercent.textContent = `${marginPercentValue.toFixed(2)}%`;
+                
+                // Update profit calculator card
+                calcPurchasePrice.textContent = `${purchasePrice.toFixed(2)} €`;
+                calcSellingPrice.textContent = `${sellingPrice.toFixed(2)} €`;
+                calcMargin.textContent = `${margin.toFixed(2)} €`;
+                calcMarginPercent.textContent = `${marginPercentValue.toFixed(2)}%`;
+                
+                // Add color coding based on margin
+                if (margin > 0) {
+                    marginAmount.classList.remove('text-red-600');
+                    marginAmount.classList.add('text-green-600');
+                    marginPercent.classList.remove('text-red-600');
+                    marginPercent.classList.add('text-green-600');
+                    
+                    calcMargin.classList.remove('text-red-800');
+                    calcMargin.classList.add('text-green-800');
+                    calcMarginPercent.classList.remove('text-red-600');
+                    calcMarginPercent.classList.add('text-green-600');
+                } else {
+                    marginAmount.classList.remove('text-green-600');
+                    marginAmount.classList.add('text-red-600');
+                    marginPercent.classList.remove('text-green-600');
+                    marginPercent.classList.add('text-red-600');
+                    
+                    calcMargin.classList.remove('text-green-800');
+                    calcMargin.classList.add('text-red-800');
+                    calcMarginPercent.classList.remove('text-green-600');
+                    calcMarginPercent.classList.add('text-red-600');
+                }
+            }
+        }
+    }
+    
+    if (purchasePriceInput && sellingPriceInput) {
+        purchasePriceInput.addEventListener('input', calculateMargin);
+        sellingPriceInput.addEventListener('input', calculateMargin);
+        calculateMargin(); // Initial calculation
+    }
+    
+    // Form validation
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            let isValid = true;
+            
+            // Validate required fields
+            if (nameInput && !nameInput.value.trim()) {
+                highlightError(nameInput, 'Le nom du produit est requis');
+                isValid = false;
+            }
+            
+            if (purchasePriceInput && (!purchasePriceInput.value || parseFloat(purchasePriceInput.value) < 0)) {
+                highlightError(purchasePriceInput, 'Le prix d\'achat doit être un nombre positif');
+                isValid = false;
+            }
+            
+            if (sellingPriceInput && (!sellingPriceInput.value || parseFloat(sellingPriceInput.value) < 0)) {
+                highlightError(sellingPriceInput, 'Le prix de vente doit être un nombre positif');
+                isValid = false;
+            }
+            
+            if (quantityInput && (!quantityInput.value || parseInt(quantityInput.value) < 0)) {
+                highlightError(quantityInput, 'La quantité doit être un nombre entier positif');
+                isValid = false;
+            }
+            
+            if (thresholdInput && (!thresholdInput.value || parseInt(thresholdInput.value) < 0)) {
+                highlightError(thresholdInput, 'Le seuil d\'alerte doit être un nombre entier positif');
+                isValid = false;
+            }
+            
+            if (!isValid) {
+                e.preventDefault();
+                showNotification('Veuillez corriger les erreurs dans le formulaire', 'error');
+                
+                // Scroll to first error
+                const firstError = document.querySelector('.text-red-600');
+                if (firstError) {
+                    firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            } else {
+                // Show loading state
+                submitButton.disabled = true;
+                submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Traitement en cours...';
+            }
+        });
+    }
+    
+    // Helper function to highlight errors
+    function highlightError(inputElement, message) {
+        const formGroup = inputElement.closest('.form-group');
+        formGroup.classList.add('border-red-300');
+        
+        // Add error message if it doesn't exist
+        if (!formGroup.querySelector('.text-red-600')) {
+            const errorMsg = document.createElement('p');
+            errorMsg.className = 'text-red-600 text-sm mt-1 flex items-center';
+            errorMsg.innerHTML = `<i class="fas fa-exclamation-circle mr-1"></i> ${message}`;
+            formGroup.appendChild(errorMsg);
+        }
+        
+        // Add shake animation
+        formGroup.classList.add('shake-animation');
+        setTimeout(() => {
+            formGroup.classList.remove('shake-animation');
+        }, 600);
+    }
+    
+    // Notification helper
+    function showNotification(message, type = 'info') {
+        // Check if notification container exists, create if not
+        let notificationContainer = document.getElementById('notificationContainer');
+        if (!notificationContainer) {
+            notificationContainer = document.createElement('div');
+            notificationContainer.id = 'notificationContainer';
+            notificationContainer.className = 'fixed bottom-4 right-4 z-50 flex flex-col gap-2';
+            document.body.appendChild(notificationContainer);
+        }
+        
+        // Create notification with appropriate styling based on type
+        const notification = document.createElement('div');
+        let bgColor, textColor, icon;
+        
+        switch(type) {
+            case 'success':
+                bgColor = 'bg-green-100 border-l-4 border-green-500';
+                textColor = 'text-green-800';
+                icon = 'fa-check-circle';
+                break;
+            case 'error':
+                bgColor = 'bg-red-100 border-l-4 border-red-500';
+                textColor = 'text-red-800';
+                icon = 'fa-exclamation-circle';
+                break;
+            case 'warning':
+                bgColor = 'bg-yellow-100 border-l-4 border-yellow-500';
+                textColor = 'text-yellow-800';
+                icon = 'fa-exclamation-triangle';
+                break;
+            default: // info
+                bgColor = 'bg-blue-100 border-l-4 border-blue-500';
+                textColor = 'text-blue-800';
+                icon = 'fa-info-circle';
+        }
+        
+        notification.className = `${bgColor} ${textColor} px-4 py-3 rounded-lg shadow-lg mb-2 transform transition-all duration-300 translate-y-2 opacity-0 flex items-center max-w-md`;
+        notification.innerHTML = `
+            <i class="fas ${icon} mr-2 text-lg"></i>
+            <div class="flex-1">${message}</div>
+            <button class="ml-2 text-secondary-400 hover:text-secondary-600 focus:outline-none">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+        
+        notificationContainer.appendChild(notification);
+        
+        // Animate in
+        setTimeout(() => {
+            notification.classList.remove('translate-y-2', 'opacity-0');
+        }, 10);
+        
+        // Add close button functionality
+        const closeBtn = notification.querySelector('button');
+        closeBtn.addEventListener('click', () => {
+            notification.classList.add('translate-y-2', 'opacity-0');
+            setTimeout(() => {
+                notification.remove();
+            }, 300);
+        });
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.remove();
+                    }
+                }, 300);
+            }
+        }, 5000);
+    }
+    
+    // Add shake animation for validation errors
+    const styleSheet = document.createElement('style');
+    styleSheet.textContent = `
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+        
+        .shake-animation {
+            animation: shake 0.6s cubic-bezier(.36,.07,.19,.97) both;
+        }
+    `;
+    document.head.appendChild(styleSheet);
+    
+    // Add hover effects to form groups
+    const formGroups = document.querySelectorAll('.form-group');
+    formGroups.forEach(group => {
+        group.addEventListener('mouseenter', () => {
+            if (!group.classList.contains('border-red-300')) {
+                group.classList.add('border-secondary-300');
+            }
+        });
+        
+        group.addEventListener('mouseleave', () => {
+            if (!group.classList.contains('border-red-300') && !group.querySelector(':focus-within')) {
+                group.classList.remove('border-secondary-300');
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,404 @@
+{% extends "base.html" %}
+{% block title %}Tableau de bord - Gestion de Stock{% endblock %}
+{% block header_title %}Tableau de bord{% endblock %}
+
+{% block content %}
+<!-- Stats Cards Section -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6">
+    <!-- Carte Produits -->
+    <div class="bg-white rounded-lg shadow-md p-4 md:p-6 border-l-4 border-primary-500 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+        <div class="flex justify-between items-center mb-3 md:mb-4">
+            <h3 class="text-base md:text-lg font-semibold text-secondary-800">Produits</h3>
+            <span class="text-primary-600 bg-primary-100 p-2 md:p-3 rounded-full flex items-center justify-center">
+                <i class="fas fa-box text-lg md:text-xl"></i>
+            </span>
+        </div>
+        <div class="text-2xl md:text-3xl font-bold text-secondary-800">{{ total_products }}</div>
+        <div class="mt-1 md:mt-2 text-xs md:text-sm text-secondary-500">Produits en stock</div>
+    </div>
+
+    <!-- Carte Stock Bas -->
+    <div class="bg-white rounded-lg shadow-md p-4 md:p-6 border-l-4 border-red-500 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+        <div class="flex justify-between items-center mb-3 md:mb-4">
+            <h3 class="text-base md:text-lg font-semibold text-secondary-800">Stock Bas</h3>
+            <span class="text-red-600 bg-red-100 p-2 md:p-3 rounded-full flex items-center justify-center">
+                <i class="fas fa-exclamation-triangle text-lg md:text-xl"></i>
+            </span>
+        </div>
+        <div class="text-2xl md:text-3xl font-bold text-red-600">{{ low_stock_products }}</div>
+        <div class="mt-1 md:mt-2 text-xs md:text-sm text-secondary-500">Produits en alerte</div>
+    </div>
+
+    <!-- Carte Fournisseurs -->
+    <div class="bg-white rounded-lg shadow-md p-4 md:p-6 border-l-4 border-green-500 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+        <div class="flex justify-between items-center mb-3 md:mb-4">
+            <h3 class="text-base md:text-lg font-semibold text-secondary-800">Fournisseurs</h3>
+            <span class="text-green-600 bg-green-100 p-2 md:p-3 rounded-full flex items-center justify-center">
+                <i class="fas fa-truck text-lg md:text-xl"></i>
+            </span>
+        </div>
+        <div class="text-2xl md:text-3xl font-bold text-secondary-800">{{ total_suppliers }}</div>
+        <div class="mt-1 md:mt-2 text-xs md:text-sm text-secondary-500">Partenaires actifs</div>
+    </div>
+
+    <!-- Carte Clients -->
+    <div class="bg-white rounded-lg shadow-md p-4 md:p-6 border-l-4 border-yellow-500 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+        <div class="flex justify-between items-center mb-3 md:mb-4">
+            <h3 class="text-base md:text-lg font-semibold text-secondary-800">Clients</h3>
+            <span class="text-yellow-600 bg-yellow-100 p-2 md:p-3 rounded-full flex items-center justify-center">
+                <i class="fas fa-users text-lg md:text-xl"></i>
+            </span>
+        </div>
+        <div class="text-2xl md:text-3xl font-bold text-secondary-800">{{ total_clients }}</div>
+        <div class="mt-1 md:mt-2 text-xs md:text-sm text-secondary-500">Base clientèle</div>
+    </div>
+</div>
+
+<!-- Charts and Top Products Section -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-6">
+    <!-- Graphique des ventes -->
+    <div class="bg-white rounded-lg shadow-md p-4 md:p-6 border border-secondary-200 hover:shadow-lg transition-all duration-300">
+        <h3 class="text-base md:text-lg font-semibold text-secondary-800 mb-3 md:mb-4 border-b pb-2">Ventes des 7 derniers jours</h3>
+        <div class="chart-container" style="position: relative; height:250px; width:100%">
+            <canvas id="salesChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Produits les plus vendus -->
+    <div class="bg-white rounded-lg shadow-md p-4 md:p-6 border border-secondary-200 hover:shadow-lg transition-all duration-300">
+        <h3 class="text-base md:text-lg font-semibold text-secondary-800 mb-3 md:mb-4 border-b pb-2">Top produits</h3>
+        {% if top_products %}
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="bg-secondary-100 border-b-2 border-secondary-200">
+                        <th class="px-3 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm font-semibold">Produit</th>
+                        <th class="px-3 md:px-4 py-2 md:py-3 text-right text-xs md:text-sm font-semibold">Quantité vendue</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in top_products %}
+                    <tr class="border-b border-secondary-200 hover:bg-secondary-50 transition-colors duration-150">
+                        <td class="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm">{{ product.product__name }}</td>
+                        <td class="px-3 md:px-4 py-2 md:py-3 text-right text-xs md:text-sm font-medium">{{ product.total_sold }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="flex justify-center items-center h-40 text-secondary-400">
+            <p class="text-sm">Aucune donnée disponible</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Recent Sales and Purchases Section -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-6">
+    <!-- Ventes récentes -->
+    <div class="bg-white rounded-lg shadow-md p-4 md:p-6 border border-secondary-200 hover:shadow-lg transition-all duration-300">
+        <div class="flex justify-between items-center mb-3 md:mb-4 border-b pb-2">
+            <h3 class="text-base md:text-lg font-semibold text-secondary-800">Ventes récentes</h3>
+            <a href="{% url 'sale_list' %}" class="text-xs md:text-sm text-primary-600 hover:text-primary-800 font-medium flex items-center transition-colors duration-150">
+                <span>Voir tout</span>
+                <i class="fas fa-arrow-right ml-1 text-xs"></i>
+            </a>
+        </div>
+        {% if recent_sales %}
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="bg-secondary-100 border-b-2 border-secondary-200">
+                        <th class="px-3 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm font-semibold">Client</th>
+                        <th class="px-3 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm font-semibold">Date</th>
+                        <th class="px-3 md:px-4 py-2 md:py-3 text-right text-xs md:text-sm font-semibold">Montant</th>
+                        <th class="px-3 md:px-4 py-2 md:py-3 text-center text-xs md:text-sm font-semibold">Statut</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sale in recent_sales %}
+                    <tr class="border-b border-secondary-200 hover:bg-secondary-50 transition-colors duration-150">
+                        <td class="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm">{{ sale.client.name|default:"Client anonyme" }}</td>
+                        <td class="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm">{{ sale.sale_date|date:"d/m/Y" }}</td>
+                        <td class="px-3 md:px-4 py-2 md:py-3 text-right text-xs md:text-sm font-medium">{{ sale.total_amount }} €</td>
+                        <td class="px-3 md:px-4 py-2 md:py-3 text-center">
+                            {% if sale.payment_status == 'paid' %}
+                            <span class="px-2 py-0.5 bg-green-100 text-green-800 rounded-full text-xs border border-green-300">Payé</span>
+                            {% elif sale.payment_status == 'partial' %}
+                            <span class="px-2 py-0.5 bg-yellow-100 text-yellow-800 rounded-full text-xs border border-yellow-300">Partiel</span>
+                            {% else %}
+                            <span class="px-2 py-0.5 bg-red-100 text-red-800 rounded-full text-xs border border-red-300">Non payé</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="flex justify-center items-center h-32 md:h-40 text-secondary-400">
+            <p class="text-sm">Aucune vente récente</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Achats récents -->
+    <div class="bg-white rounded-lg shadow-md p-4 md:p-6 border border-secondary-200 hover:shadow-lg transition-all duration-300">
+        <div class="flex justify-between items-center mb-3 md:mb-4 border-b pb-2">
+            <h3 class="text-base md:text-lg font-semibold text-secondary-800">Achats récents</h3>
+            <a href="{% url 'purchase_list' %}" class="text-xs md:text-sm text-primary-600 hover:text-primary-800 font-medium flex items-center transition-colors duration-150">
+                <span>Voir tout</span>
+                <i class="fas fa-arrow-right ml-1 text-xs"></i>
+            </a>
+        </div>
+        {% if recent_purchases %}
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="bg-secondary-100 border-b-2 border-secondary-200">
+                        <th class="px-3 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm font-semibold">Fournisseur</th>
+                        <th class="px-3 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm font-semibold">Date</th>
+                        <th class="px-3 md:px-4 py-2 md:py-3 text-right text-xs md:text-sm font-semibold">Montant</th>
+                        <th class="px-3 md:px-4 py-2 md:py-3 text-center text-xs md:text-sm font-semibold">Statut</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for purchase in recent_purchases %}
+                    <tr class="border-b border-secondary-200 hover:bg-secondary-50 transition-colors duration-150">
+                        <td class="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm">{{ purchase.supplier.name }}</td>
+                        <td class="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm">{{ purchase.purchase_date|date:"d/m/Y" }}</td>
+                        <td class="px-3 md:px-4 py-2 md:py-3 text-right text-xs md:text-sm font-medium">{{ purchase.total_amount }} €</td>
+                        <td class="px-3 md:px-4 py-2 md:py-3 text-center">
+                            {% if purchase.is_fully_paid %}
+                            <span class="px-2 py-0.5 bg-green-100 text-green-800 rounded-full text-xs border border-green-300">Payé</span>
+                            {% else %}
+                            <span class="px-2 py-0.5 bg-red-100 text-red-800 rounded-full text-xs border border-red-300">Non payé</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="flex justify-center items-center h-32 md:h-40 text-secondary-400">
+            <p class="text-sm">Aucun achat récent</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Fix for infinite bottom space */
+    body {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    /* Animations for dashboard elements */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .stats-card {
+        animation: fadeInUp 0.5s ease-out forwards;
+        opacity: 0;
+    }
+    
+    .stats-card:nth-child(1) { animation-delay: 0.1s; }
+    .stats-card:nth-child(2) { animation-delay: 0.2s; }
+    .stats-card:nth-child(3) { animation-delay: 0.3s; }
+    .stats-card:nth-child(4) { animation-delay: 0.4s; }
+    
+    /* Responsive chart container */
+    .chart-container {
+        position: relative;
+        height: 250px;
+        width: 100%;
+        max-height: 300px;
+    }
+    
+    /* Hover effects for tables */
+    .data-table tr {
+        transition: all 0.2s ease;
+    }
+    
+    .data-table tr:hover {
+        background-color: rgba(203, 213, 225, 0.2);
+        transform: translateX(2px);
+    }
+    
+    /* Status badges */
+    .status-badge {
+        transition: all 0.2s ease;
+    }
+    
+    .status-badge:hover {
+        transform: scale(1.05);
+    }
+    
+    /* Fix for mobile overflow */
+    .overflow-container {
+        max-width: 100%;
+        overflow-x: auto;
+    }
+    
+    @media (max-width: 640px) {
+        .chart-container {
+            height: 200px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add animation classes to stats cards
+    const statsCards = document.querySelectorAll('.grid > div');
+    statsCards.forEach(card => {
+        card.classList.add('stats-card');
+    });
+    
+    // Graphique des ventes avec options améliorées
+    const salesData = {{ sales_by_day|safe }};
+    const ctx = document.getElementById('salesChart').getContext('2d');
+    
+    // Responsive font size
+    Chart.defaults.font.size = window.innerWidth < 768 ? 10 : 12;
+    
+    // Create gradient for chart background
+    const gradient = ctx.createLinearGradient(0, 0, 0, 250);
+    gradient.addColorStop(0, 'rgba(14, 165, 233, 0.3)');
+    gradient.addColorStop(1, 'rgba(14, 165, 233, 0.0)');
+    
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: salesData.map(item => item.date),
+            datasets: [{
+                label: 'Ventes',
+                data: salesData.map(item => item.amount),
+                backgroundColor: gradient,
+                borderColor: 'rgba(14, 165, 233, 1)',
+                borderWidth: 3,
+                tension: 0.4,
+                pointBackgroundColor: 'white',
+                pointBorderColor: 'rgba(14, 165, 233, 1)',
+                pointBorderWidth: 2,
+                pointRadius: window.innerWidth < 768 ? 3 : 5,
+                pointHoverRadius: window.innerWidth < 768 ? 5 : 8,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        borderDash: [5, 5],
+                        color: 'rgba(0, 0, 0, 0.1)'
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return value + ' FCFA';
+                        },
+                        font: {
+                            size: window.innerWidth < 768 ? 9 : 11
+                        }
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        maxRotation: 45,
+                        minRotation: 45,
+                        font: {
+                            size: window.innerWidth < 768 ? 9 : 11
+                        }
+                    }
+                }
+            },
+            plugins: {
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    bodyFont: {
+                        size: window.innerWidth < 768 ? 12 : 14
+                    },
+                    callbacks: {
+                        label: function(context) {
+                            return context.dataset.label + ': ' + context.parsed.y + ' FCFA';
+                        }
+                    },
+                    padding: 10,
+                    cornerRadius: 6,
+                    titleFont: {
+                        size: window.innerWidth < 768 ? 12 : 14,
+                        weight: 'bold'
+                    }
+                },
+                legend: {
+                    display: false
+                }
+            },
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
+            animation: {
+                duration: 1000,
+                easing: 'easeOutQuart'
+            }
+        }
+    });
+    
+    // Make tables responsive
+    const tables = document.querySelectorAll('table');
+    tables.forEach(table => {
+        table.classList.add('data-table');
+        
+        // Add status badge class to all status badges
+        const statusBadges = table.querySelectorAll('span[class*="rounded-full"]');
+        statusBadges.forEach(badge => {
+            badge.classList.add('status-badge');
+        });
+    });
+    
+    // Fix for infinite bottom space
+    function adjustContentHeight() {
+        const content = document.querySelector('.content');
+        if (content) {
+            content.style.minHeight = 'auto';
+            
+            // Check if content is shorter than viewport
+            const contentHeight = content.scrollHeight;
+            const viewportHeight = window.innerHeight;
+            const headerHeight = document.querySelector('header') ? document.querySelector('header').offsetHeight : 0;
+            
+            if (contentHeight < (viewportHeight - headerHeight)) {
+                content.style.minHeight = (viewportHeight - headerHeight) + 'px';
+            }
+        }
+    }
+    
+    // Run on load and resize
+    adjustContentHeight();
+    window.addEventListener('resize', adjustContentHeight);
+});
+</script>
+{% endblock %}
